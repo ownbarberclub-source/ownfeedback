@@ -35,7 +35,8 @@ import {
   Search,
   ChevronDown,
   TrendingDown,
-  Skull
+  Skull,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LogoLocal from './assets/logo.png';
@@ -61,17 +62,14 @@ export default function App() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [hubLoading, setHubLoading] = useState(true);
+  const [hubBlocked, setHubBlocked] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   
   // -- Period State --
   const [viewMode, setViewMode] = useState<'mensal' | 'anual'>('mensal');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
-  // -- Sessão do OWN Hub (injetada via relay token) --
-  const hubSession = (window as any).__OWN_HUB_SESSION__;
-  const hubRole = new URLSearchParams(window.location.search).get('hub_role') || 'operador';
-  const isHubAdmin = hubRole === 'administrador';
-
 
   // -- Form States --
   const [newBarber, setNewBarber] = useState({ name: '', unitId: '' });
@@ -86,9 +84,98 @@ export default function App() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // --- Initial Load (Supabase + localStorage fallback) ---
+  // --- Hub SSO Authentication ---
   useEffect(() => {
-    const loadData = async () => {
+    const initAuth = async () => {
+      setHubLoading(true);
+
+      const params = new URLSearchParams(window.location.search);
+      const hubUser = params.get('hub_user');
+      const hubPass = params.get('hub_pass');
+      const hubToken = params.get('hub_token');
+
+      // 1. Tenta autenticar via relay de senha
+      if (hubUser && hubPass) {
+        try {
+          const password = atob(hubPass);
+          await supabase.auth.signInWithPassword({ email: hubUser, password });
+        } catch (e) {
+          console.error('[Feedback] Password relay error:', e);
+        }
+      }
+
+      // 2. Verifica sessão ativa no Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+
+      // 3. Token relay fallback
+      if (!session?.user && hubUser && hubToken) {
+        try {
+          const decoded = JSON.parse(atob(hubToken));
+          if (decoded.uid && decoded.exp > Date.now()) {
+            const { data: profileByToken } = await supabase
+              .from('hub_profiles')
+              .select('*')
+              .eq('id', decoded.uid)
+              .single();
+
+            if (profileByToken && profileByToken.is_active !== false) {
+              const url = new URL(window.location.href);
+              ['hub_user','hub_pass','hub_role','hub_token','hub_name'].forEach(p => url.searchParams.delete(p));
+              window.history.replaceState({}, '', url.toString());
+              
+              setCurrentUser({ 
+                id: profileByToken.id, 
+                name: profileByToken.name || hubUser.split('@')[0], 
+                email: hubUser, 
+                isAdmin: profileByToken.role === 'admin' 
+              });
+              setHubLoading(false);
+              loadData();
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('[Feedback] Token relay error:', e);
+        }
+      }
+
+      if (!session?.user) {
+        setHubBlocked(true);
+        setHubLoading(false);
+        return;
+      }
+
+      // 4. Busca perfil no hub_profiles
+      const { data: profile } = await supabase
+        .from('hub_profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!profile || profile.is_active === false) {
+        setHubBlocked(true);
+        setHubLoading(false);
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      ['hub_user','hub_pass','hub_role','hub_token','hub_name'].forEach(p => url.searchParams.delete(p));
+      window.history.replaceState({}, '', url.toString());
+
+      setCurrentUser({ 
+        id: session.user.id, 
+        name: profile.name || session.user.email?.split('@')[0] || 'Usuário', 
+        email: session.user.email || '', 
+        isAdmin: profile.role === 'admin' 
+      });
+      setHubLoading(false);
+      loadData();
+    };
+
+    initAuth();
+  }, []);
+
+  const loadData = async () => {
       // Carrega unidades do Supabase
       const { data: dbUnits } = await supabase.from('feedback_units').select('*').order('name');
       if (dbUnits && dbUnits.length > 0) {
@@ -259,6 +346,39 @@ export default function App() {
     setTimeout(() => { setShowSuccess(false); setActiveTab('dashboard'); }, 2000);
   };
 
+  if (hubLoading) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#fff', fontFamily: 'sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 48, height: 48, border: '3px solid #E10600', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ color: '#71717a', fontSize: 14 }}>Verificando acesso via Hub...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  if (hubBlocked || !currentUser) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'sans-serif' }}>
+        <div style={{ maxWidth: 400, width: '100%', textAlign: 'center', background: '#0a0a0a', padding: 40, borderRadius: 24, border: '1px solid #1a1a1a' }}>
+          <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #E10600, #B00400)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', boxShadow: '0 8px 24px rgba(225,6,0,0.3)' }}>
+            <Lock size={28} color="#fff" />
+          </div>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f4f4f5', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>Acesso Restrito</h2>
+          <p style={{ color: '#71717a', fontSize: 14, lineHeight: 1.6, marginBottom: 32 }}>
+            Este sistema é exclusivo para operadores autorizados.<br />Por favor, acesse pelo <strong style={{ color: '#fff' }}>OWN Hub</strong>.
+          </p>
+          <a
+            href="https://own-hub.vercel.app"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#E10600', color: '#fff', textDecoration: 'none', padding: '12px 28px', borderRadius: 12, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 8px 24px rgba(225,6,0,0.3)' }}
+          >
+            → Ir para o OWN Hub
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-black relative overflow-hidden text-zinc-100 font-sans antialiased bg-mesh">
