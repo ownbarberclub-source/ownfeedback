@@ -40,6 +40,8 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import LogoLocal from './assets/logo.png';
 
+import { supabase } from './lib/supabase';
+
 const STORAGE_KEYS = {
   BARBERS: 'own_barbers',
   UNITS: 'own_units',
@@ -84,22 +86,66 @@ export default function App() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // --- Initial Load ---
+  // --- Initial Load (Supabase + localStorage fallback) ---
   useEffect(() => {
-    const savedUnits = localStorage.getItem(STORAGE_KEYS.UNITS);
-    const savedBarbers = localStorage.getItem(STORAGE_KEYS.BARBERS);
-    const savedEvals = localStorage.getItem(STORAGE_KEYS.EVALUATIONS);
-    if (savedUnits) setUnits(JSON.parse(savedUnits)); else setUnits(INITIAL_UNITS);
-    if (savedBarbers) setBarbers(JSON.parse(savedBarbers)); else {
-      setBarbers(BARBER_LIST.map((b, idx) => ({ id: (idx + 1).toString(), name: b.name, unitId: b.unitId })));
-    }
-    if (savedEvals) setEvaluations(JSON.parse(savedEvals));
+    const loadData = async () => {
+      // Carrega unidades do Supabase
+      const { data: dbUnits } = await supabase.from('feedback_units').select('*').order('name');
+      if (dbUnits && dbUnits.length > 0) {
+        setUnits(dbUnits.map(u => ({ id: u.id, name: u.name })));
+      } else {
+        // Fallback: localStorage
+        const saved = localStorage.getItem(STORAGE_KEYS.UNITS);
+        if (saved) setUnits(JSON.parse(saved)); else setUnits(INITIAL_UNITS);
+      }
+
+      // Carrega barbeiros do Supabase
+      const { data: dbBarbers } = await supabase.from('feedback_barbers').select('*').order('name');
+      if (dbBarbers && dbBarbers.length > 0) {
+        setBarbers(dbBarbers.map(b => ({ id: b.id, name: b.name, unitId: b.unit_id })));
+      } else {
+        const saved = localStorage.getItem(STORAGE_KEYS.BARBERS);
+        if (saved) setBarbers(JSON.parse(saved));
+        else setBarbers(BARBER_LIST.map((b, idx) => ({ id: (idx + 1).toString(), name: b.name, unitId: b.unitId })));
+      }
+
+      // Carrega avaliações do Supabase
+      const { data: dbEvals } = await supabase.from('feedback_evaluations').select('*').order('created_at', { ascending: false });
+      if (dbEvals && dbEvals.length > 0) {
+        setEvaluations(dbEvals.map(e => ({
+          id: e.id,
+          clientName: e.client_name,
+          unitId: e.unit_id,
+          barberId: e.barber_id,
+          serviceDate: e.service_date,
+          serviceTime: e.service_time,
+          clientArrivalStatus: e.client_arrival_status,
+          serviceStartStatus: e.service_start_status,
+          complaintStatus: e.complaint_status,
+          leftFeedback: e.left_feedback,
+          feedbackDescription: e.feedback_description,
+          isSubscriber: e.is_subscriber,
+          offeredSubscription: e.offered_subscription,
+          subscriptionInterest: e.subscription_interest,
+          needsFollowUp: e.needs_follow_up,
+          generalNotes: e.general_notes,
+          satisfactionLevel: e.satisfaction_level,
+          problemDescription: e.problem_description,
+          wouldRecommend: e.satisfaction_level >= 4,
+          hadReturnRequest: e.needs_follow_up,
+          rating: e.satisfaction_level,
+          date: e.created_at,
+          season: new Date(e.created_at).getFullYear().toString(),
+        })));
+      } else {
+        const saved = localStorage.getItem(STORAGE_KEYS.EVALUATIONS);
+        if (saved) setEvaluations(JSON.parse(saved));
+      }
+    };
+
+    loadData();
   }, []);
 
-  // --- Persistence ---
-  useEffect(() => { if (units.length > 0) localStorage.setItem(STORAGE_KEYS.UNITS, JSON.stringify(units)); }, [units]);
-  useEffect(() => { if (barbers.length > 0) localStorage.setItem(STORAGE_KEYS.BARBERS, JSON.stringify(barbers)); }, [barbers]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.EVALUATIONS, JSON.stringify(evaluations)); }, [evaluations]);
 
   // --- Computed Filters ---
   const filteredEvaluations = useMemo(() => {
@@ -153,21 +199,55 @@ export default function App() {
   }, [pilotCards]);
 
   // --- Handlers ---
-  const handleAddBarber = (e: React.FormEvent) => {
+  const handleAddBarber = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBarber.name || !newBarber.unitId) return;
-    setBarbers([...barbers, { id: crypto.randomUUID(), name: newBarber.name.toUpperCase(), unitId: newBarber.unitId }]);
+    const newB = { id: crypto.randomUUID(), name: newBarber.name.toUpperCase(), unitId: newBarber.unitId };
+    setBarbers([...barbers, newB]);
+    await supabase.from('feedback_barbers').insert([{ id: newB.id, name: newB.name, unit_id: newB.unitId }]);
     setNewBarber({ name: '', unitId: '' });
   };
 
-  const handleSubmitEval = (e: React.FormEvent) => {
+  const handleSubmitEval = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEval.barberId || !newEval.clientName) return;
+
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
     const evaluation: Evaluation = {
-      ...(newEval as Evaluation), id: crypto.randomUUID(), rating: newEval.satisfactionLevel || 5,
+      ...(newEval as Evaluation), id, rating: newEval.satisfactionLevel || 5,
       hadReturnRequest: newEval.needsFollowUp,
-      date: new Date().toISOString(), season: `${new Date().getFullYear()}`
+      date: now, season: `${new Date().getFullYear()}`
     };
+
+    // Salva no Supabase
+    const { error } = await supabase.from('feedback_evaluations').insert([{
+      id,
+      unit_id: newEval.unitId,
+      barber_id: newEval.barberId,
+      client_name: newEval.clientName,
+      service_date: newEval.serviceDate,
+      service_time: newEval.serviceTime,
+      client_arrival_status: newEval.clientArrivalStatus,
+      service_start_status: newEval.serviceStartStatus,
+      complaint_status: newEval.complaintStatus,
+      left_feedback: newEval.leftFeedback,
+      feedback_description: newEval.feedbackDescription,
+      is_subscriber: newEval.isSubscriber,
+      offered_subscription: newEval.offeredSubscription,
+      subscription_interest: newEval.subscriptionInterest,
+      needs_follow_up: newEval.needsFollowUp,
+      general_notes: newEval.generalNotes,
+      satisfaction_level: newEval.satisfactionLevel,
+      problem_description: newEval.problemDescription,
+    }]);
+
+    if (error) {
+      console.error('Erro ao salvar avaliação:', error);
+      alert('Erro ao salvar avaliação: ' + error.message);
+      return;
+    }
+
     setEvaluations([evaluation, ...evaluations]);
     setNewEval({ 
         clientName: '', unitId: '', barberId: '', serviceDate: new Date().toISOString().split('T')[0], serviceTime: '',
@@ -178,6 +258,7 @@ export default function App() {
     setShowSuccess(true);
     setTimeout(() => { setShowSuccess(false); setActiveTab('dashboard'); }, 2000);
   };
+
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-black relative overflow-hidden text-zinc-100 font-sans antialiased bg-mesh">
