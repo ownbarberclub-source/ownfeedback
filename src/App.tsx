@@ -345,10 +345,10 @@ export default function App() {
 
   if (hubLoading) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#fff', fontFamily: 'sans-serif' }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#fff', fontFamily: "'Titillium Web', sans-serif" }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 48, height: 48, border: '3px solid #E10600', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ color: '#71717a', fontSize: 14 }}>Verificando acesso via Hub...</p>
+          <p style={{ color: '#71717a', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Verificando acesso via Hub...</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
@@ -357,18 +357,18 @@ export default function App() {
 
   if (hubBlocked || !currentUser) {
     return (
-      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Titillium Web', sans-serif" }}>
         <div style={{ maxWidth: 400, width: '100%', textAlign: 'center', background: '#0a0a0a', padding: 40, borderRadius: 24, border: '1px solid #1a1a1a' }}>
           <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #E10600, #B00400)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', boxShadow: '0 8px 24px rgba(225,6,0,0.3)' }}>
             <Lock size={28} color="#fff" />
           </div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f4f4f5', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>Acesso Restrito</h2>
+          <h2 style={{ fontSize: 22, fontWeight: 900, color: '#f4f4f5', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '-0.02em', fontStyle: 'italic' }}>Acesso Restrito</h2>
           <p style={{ color: '#71717a', fontSize: 14, lineHeight: 1.6, marginBottom: 32 }}>
             Este sistema é exclusivo para operadores autorizados.<br />Por favor, acesse pelo <strong style={{ color: '#fff' }}>OWN Hub</strong>.
           </p>
           <a
             href="https://ownpainel.vercel.app"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#E10600', color: '#fff', textDecoration: 'none', padding: '12px 28px', borderRadius: 12, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 8px 24px rgba(225,6,0,0.3)' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#E10600', color: '#fff', textDecoration: 'none', padding: '12px 28px', borderRadius: 12, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 8px 24px rgba(225,6,0,0.3)' }}
           >
             → Ir para o OWN Hub
           </a>
