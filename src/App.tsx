@@ -36,7 +36,8 @@ import {
   ChevronDown,
   TrendingDown,
   Skull,
-  Lock
+  Lock,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LogoLocal from './assets/logo.png';
