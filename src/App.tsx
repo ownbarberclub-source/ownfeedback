@@ -403,7 +403,7 @@ export default function App() {
       <aside className="w-full md:w-80 bg-zinc-950 border-r border-zinc-900 flex flex-col z-50 relative shrink-0">
         <div className="p-10 text-center">
           <div className="w-24 h-24 bg-white/5 rounded-2xl p-4 mx-auto flex items-center justify-center border border-zinc-800 shadow-xl group hover:border-brand/40 transition-colors">
-            <img src={LogoLocal} alt="Own Barber Club" className="w-full h-full object-contain brightness-0 invert" onError={(e) => { e.currentTarget.src = "https://ownbarberclublp.vercel.app/assets/logo.png" }} />
+            <img src={LogoLocal} alt="Own Barber Club" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} onError={(e) => { e.currentTarget.src = "https://ownbarberclublp.vercel.app/assets/logo.png" }} />
           </div>
           <div className="mt-6">
             <div className="text-2xl font-black tracking-tighter uppercase">OWN <span className="text-brand">FEEDBACK</span></div>
