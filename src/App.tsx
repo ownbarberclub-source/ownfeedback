@@ -221,6 +221,25 @@ export default function App() {
     initAuth();
   }, []);
 
+  // --- Realtime Data Synchronization ---
+  useEffect(() => {
+    const channel = supabase.channel('realtime-feedback-sync')
+      .on('postgres', { event: '*', schema: 'public', table: 'feedback_evaluations' }, () => {
+        loadData();
+      })
+      .on('postgres', { event: '*', schema: 'public', table: 'feedback_units' }, () => {
+        loadData();
+      })
+      .on('postgres', { event: '*', schema: 'public', table: 'feedback_barbers' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // --- Computed Filters ---
   const filteredEvaluations = useMemo(() => {
     return evaluations.filter(e => {
