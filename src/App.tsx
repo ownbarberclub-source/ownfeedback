@@ -63,9 +63,18 @@ export default function App() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [hubLoading, setHubLoading] = useState(true);
-  const [hubBlocked, setHubBlocked] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser] = useState(() => {
+    const session = window.OwnHub?.getSession();
+    return session ? {
+      id: session.userId,
+      name: session.userName,
+      email: session.userEmail,
+      isAdmin: session.userRole === 'admin'
+    } : null;
+  });
+  
+  // -- Filter State --
+  const [selectedUnitFilter, setSelectedUnitFilter] = useState<string>('all');
   
   // -- Period State --
   const [viewMode, setViewMode] = useState<'mensal' | 'anual'>('mensal');
@@ -130,95 +139,8 @@ export default function App() {
     }
   };
 
-  // --- Hub SSO Authentication ---
   useEffect(() => {
-    const initAuth = async () => {
-      setHubLoading(true);
-
-      const params = new URLSearchParams(window.location.search);
-      const hubUser = params.get('hub_user');
-      const hubPass = params.get('hub_pass');
-      const hubToken = params.get('hub_token');
-
-      // 1. Tenta autenticar via relay de senha
-      if (hubUser && hubPass) {
-        try {
-          const password = atob(hubPass);
-          await supabase.auth.signInWithPassword({ email: hubUser, password });
-        } catch (e) {
-          console.error('[Feedback] Password relay error:', e);
-        }
-      }
-
-      // 2. Verifica sessão ativa no Supabase
-      const { data: { session } } = await supabase.auth.getSession();
-
-      // 3. Token relay fallback
-      if (!session?.user && hubUser && hubToken) {
-        try {
-          const decoded = JSON.parse(atob(hubToken));
-          if (decoded.uid && decoded.exp > Date.now()) {
-            const { data: profileByToken } = await supabase
-              .from('hub_profiles')
-              .select('*')
-              .eq('id', decoded.uid)
-              .single();
-
-            if (profileByToken && profileByToken.is_active !== false) {
-              const url = new URL(window.location.href);
-              ['hub_user','hub_pass','hub_role','hub_token','hub_name'].forEach(p => url.searchParams.delete(p));
-              window.history.replaceState({}, '', url.toString());
-              
-              setCurrentUser({ 
-                id: profileByToken.id, 
-                name: profileByToken.name || hubUser.split('@')[0], 
-                email: hubUser, 
-                isAdmin: profileByToken.role === 'admin' 
-              });
-              setHubLoading(false);
-              loadData();
-              return;
-            }
-          }
-        } catch (e) {
-          console.error('[Feedback] Token relay error:', e);
-        }
-      }
-
-      if (!session?.user) {
-        setHubBlocked(true);
-        setHubLoading(false);
-        return;
-      }
-
-      // 4. Busca perfil no hub_profiles
-      const { data: profile } = await supabase
-        .from('hub_profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!profile || profile.is_active === false) {
-        setHubBlocked(true);
-        setHubLoading(false);
-        return;
-      }
-
-      const url = new URL(window.location.href);
-      ['hub_user','hub_pass','hub_role','hub_token','hub_name'].forEach(p => url.searchParams.delete(p));
-      window.history.replaceState({}, '', url.toString());
-
-      setCurrentUser({ 
-        id: session.user.id, 
-        name: profile.name || session.user.email?.split('@')[0] || 'Usuário', 
-        email: session.user.email || '', 
-        isAdmin: profile.role === 'admin' 
-      });
-      setHubLoading(false);
-      loadData();
-    };
-
-    initAuth();
+    loadData();
   }, []);
 
   // --- Realtime Data Synchronization ---
@@ -250,34 +172,36 @@ export default function App() {
 
   // --- Gamification Engine ---
   const pilotCards = useMemo(() => {
-    return barbers.map(barber => {
-      const bEvals = filteredEvaluations.filter(e => e.barberId === barber.id);
-      const total = bEvals.length;
-      
-      const satisfAvg = total > 0 ? bEvals.reduce((acc, curr) => acc + (curr.satisfactionLevel || 0), 0) / total : 0;
-      const recRate = total > 0 ? (bEvals.filter(e => e.wouldRecommend).length / total) * 100 : 0;
-      const offerRate = total > 0 ? (bEvals.filter(e => e.offeredSubscription).length / total) * 100 : 0;
-      const punctRate = total > 0 ? (bEvals.filter(e => e.serviceStartStatus === 'SIM').length / total) * 100 : 0;
-      const correctionCount = bEvals.filter(e => e.hadReturnRequest).length;
+    return barbers
+      .filter(b => selectedUnitFilter === 'all' || b.unitId === selectedUnitFilter)
+      .map(barber => {
+        const bEvals = filteredEvaluations.filter(e => e.barberId === barber.id);
+        const total = bEvals.length;
+        
+        const satisfAvg = total > 0 ? bEvals.reduce((acc, curr) => acc + (curr.satisfactionLevel || 0), 0) / total : 0;
+        const recRate = total > 0 ? (bEvals.filter(e => e.wouldRecommend).length / total) * 100 : 0;
+        const offerRate = total > 0 ? (bEvals.filter(e => e.offeredSubscription).length / total) * 100 : 0;
+        const punctRate = total > 0 ? (bEvals.filter(e => e.serviceStartStatus === 'SIM').length / total) * 100 : 0;
+        const correctionCount = bEvals.filter(e => e.hadReturnRequest).length;
 
-      // Medal Logic
-      const medals = [];
-      if (satisfAvg >= 4.8 && total >= 5) medals.push({ id: 'top', icon: Star, label: 'Líder de Satisfação', color: 'text-yellow-400' });
-      if (punctRate === 100 && total >= 5) medals.push({ id: 'time', icon: Timer, label: 'Mestre da Pontualidade', color: 'text-blue-400' });
-      if (offerRate >= 80 && total >= 5) medals.push({ id: 'sales', icon: Zap, label: 'Especialista de Vendas', color: 'text-brand' });
-      if (recRate === 100 && total >= 5) medals.push({ id: 'fav', icon: Heart, label: 'Nota Máxima', color: 'text-pink-400' });
+        // Medal Logic
+        const medals = [];
+        if (satisfAvg >= 4.8 && total >= 5) medals.push({ id: 'top', icon: Star, label: 'Líder de Satisfação', color: 'text-yellow-400' });
+        if (punctRate === 100 && total >= 5) medals.push({ id: 'time', icon: Timer, label: 'Mestre da Pontualidade', color: 'text-blue-400' });
+        if (offerRate >= 80 && total >= 5) medals.push({ id: 'sales', icon: Zap, label: 'Especialista de Vendas', color: 'text-brand' });
+        if (recRate === 100 && total >= 5) medals.push({ id: 'fav', icon: Heart, label: 'Nota Máxima', color: 'text-pink-400' });
 
-      const xp = Math.min(1000, Math.round(
-        (satisfAvg * 100) + 
-        (recRate * 2) + 
-        (offerRate * 2) + 
-        (punctRate) - 
-        (correctionCount * 60)
-      ));
+        const xp = Math.min(1000, Math.round(
+          (satisfAvg * 100) + 
+          (recRate * 2) + 
+          (offerRate * 2) + 
+          (punctRate) - 
+          (correctionCount * 60)
+        ));
 
-      return { ...barber, total, satisfAvg, recRate, offerRate, punctRate, correctionCount, medals, xp };
-    }).sort((a, b) => b.xp - a.xp);
-  }, [barbers, filteredEvaluations]);
+        return { ...barber, total, satisfAvg, recRate, offerRate, punctRate, correctionCount, medals, xp };
+      }).sort((a, b) => b.xp - a.xp);
+  }, [barbers, filteredEvaluations, selectedUnitFilter]);
 
   const followUpList = useMemo(() => {
     return filteredEvaluations
@@ -362,39 +286,6 @@ export default function App() {
     setTimeout(() => { setShowSuccess(false); setActiveTab('dashboard'); }, 2000);
   };
 
-  if (hubLoading) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#fff', fontFamily: "'Titillium Web', sans-serif" }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 48, height: 48, border: '3px solid #E10600', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ color: '#71717a', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Verificando acesso via Hub...</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-      </div>
-    );
-  }
-
-  if (hubBlocked || !currentUser) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Titillium Web', sans-serif" }}>
-        <div style={{ maxWidth: 400, width: '100%', textAlign: 'center', background: '#0a0a0a', padding: 40, borderRadius: 24, border: '1px solid #1a1a1a' }}>
-          <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #E10600, #B00400)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', boxShadow: '0 8px 24px rgba(225,6,0,0.3)' }}>
-            <Lock size={28} color="#fff" />
-          </div>
-          <h2 style={{ fontSize: 22, fontWeight: 900, color: '#f4f4f5', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '-0.02em', fontStyle: 'italic' }}>Acesso Restrito</h2>
-          <p style={{ color: '#71717a', fontSize: 14, lineHeight: 1.6, marginBottom: 32 }}>
-            Este sistema é exclusivo para operadores autorizados.<br />Por favor, acesse pelo <strong style={{ color: '#fff' }}>OWN Hub</strong>.
-          </p>
-          <a
-            href="https://ownpainel.vercel.app"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#E10600', color: '#fff', textDecoration: 'none', padding: '12px 28px', borderRadius: 12, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: '0 8px 24px rgba(225,6,0,0.3)' }}
-          >
-            → Ir para o OWN Hub
-          </a>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-black relative overflow-hidden text-zinc-100 font-sans antialiased bg-mesh">
@@ -471,12 +362,25 @@ export default function App() {
           {activeTab === 'dashboard' && (
             <motion.div key="db" initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="space-y-12">
               <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-zinc-900 pb-8">
-                <div>
+                <div className="flex-1">
                   <div className="flex items-center gap-3 mb-4">
                     <span className="bg-brand/10 text-brand font-bold px-3 py-1 rounded-md text-[10px] uppercase tracking-wider border border-brand/20">Performance</span>
                     <span className="text-zinc-500 font-bold text-[10px] uppercase tracking-[0.3em]">{viewMode === 'mensal' ? `${MONTHS[selectedMonth]} ${selectedYear}` : `ANUAL ${selectedYear}`}</span>
                   </div>
                   <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none">THE <span className="text-brand">RANK.</span></h1>
+                </div>
+                <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800">
+                  <MapPin size={16} className="ml-4 text-zinc-500" />
+                  <select 
+                    className="bg-transparent text-white font-bold uppercase text-xs outline-none cursor-pointer hover:text-brand transition-colors py-2 pr-4"
+                    value={selectedUnitFilter}
+                    onChange={(e) => setSelectedUnitFilter(e.target.value)}
+                  >
+                    <option value="all" className="bg-zinc-950">TODAS AS UNIDADES</option>
+                    {units.map(u => (
+                      <option key={u.id} value={u.id} className="bg-zinc-950">{u.name}</option>
+                    ))}
+                  </select>
                 </div>
               </header>
 
@@ -648,7 +552,45 @@ export default function App() {
 
                   {followUpList.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                      {followUpList.map((item, idx) => (<motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} className="card p-8 group border-l-4 border-l-brand hover:bg-zinc-800/20 transition-all"><div className="relative z-10"><div className="flex justify-between items-start mb-6"><div className="text-xl font-black uppercase text-white tracking-tight leading-none">{item.clientName}</div><div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest"><Clock size={12} /> {new Date(item.date).toLocaleDateString('pt-BR')}</div></div><div className="space-y-4 bg-zinc-950/40 p-5 rounded-xl border border-zinc-800/50"><div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest border-b border-zinc-900 pb-3"><span className="text-zinc-500">Profissional</span><span className="text-white font-black">{barbers.find(b => b.id === item.barberId)?.name}</span></div><div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest border-b border-zinc-900 pb-3"><span className="text-zinc-500">Unidade</span><span className="text-white font-black">{units.find(u => u.id === item.unitId)?.name}</span></div><div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest"><span className="text-zinc-500">Satisfação</span><span className="flex gap-1.5">{Array.from({length: 5}).map((_, i) => (<Star key={i} size={10} className={i < item.satisfactionLevel ? 'text-yellow-400' : 'text-zinc-800'} fill={i < item.satisfactionLevel ? 'currentColor' : 'none'} />))}</span></div></div><div className="mt-8"><button onClick={() => { if(window.confirm(`Marcar retorno de ${item.clientName} como resolvido?`)) { setEvaluations(evaluations.map(e => e.id === item.id ? {...e, needsFollowUp: false} : e)); } }} className="w-full bg-zinc-950 hover:bg-zinc-800 text-[10px] font-bold uppercase tracking-widest py-4 rounded-xl border border-zinc-800 transition-all flex items-center justify-center gap-2 group/btn"><CheckCircle2 size={16} className="text-zinc-500 group-hover/btn:text-green-500 transition-colors" /> Resolver Pedido</button></div></div></motion.div>))}</div>
+                      {followUpList.map((item, idx) => (
+                        <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} className="card p-8 group border-l-4 border-l-brand hover:bg-zinc-800/20 transition-all">
+                          <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-6">
+                              <div className="text-xl font-black uppercase text-white tracking-tight leading-none">{item.clientName}</div>
+                              <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest"><Clock size={12} /> {new Date(item.date).toLocaleDateString('pt-BR')}</div>
+                            </div>
+                            
+                            <div className="space-y-4 bg-zinc-950/40 p-5 rounded-xl border border-zinc-800/50">
+                              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest border-b border-zinc-900 pb-3">
+                                <span className="text-zinc-500">Profissional</span>
+                                <span className="text-white font-black">{barbers.find(b => b.id === item.barberId)?.name}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest border-b border-zinc-900 pb-3">
+                                <span className="text-zinc-500">Unidade</span>
+                                <span className="text-white font-black">{units.find(u => u.id === item.unitId)?.name}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                                <span className="text-zinc-500">Satisfação</span>
+                                <span className="flex gap-1.5">{Array.from({length: 5}).map((_, i) => (<Star key={i} size={10} className={i < item.satisfactionLevel ? 'text-yellow-400' : 'text-zinc-800'} fill={i < item.satisfactionLevel ? 'currentColor' : 'none'} />))}</span>
+                              </div>
+                            </div>
+
+                            {item.problemDescription && (
+                              <div className="mt-4 p-4 bg-red-900/10 border border-brand/10 rounded-xl">
+                                <div className="text-[8px] font-bold text-brand uppercase tracking-widest mb-1 flex items-center gap-2"><AlertCircle size={10}/> Relato do Problema</div>
+                                <p className="text-[10px] text-zinc-400 font-medium italic">"{item.problemDescription}"</p>
+                              </div>
+                            )}
+
+                            <div className="mt-8">
+                              <button onClick={() => { if(window.confirm(`Marcar retorno de ${item.clientName} como resolvido?`)) { setEvaluations(evaluations.map(e => e.id === item.id ? {...e, needsFollowUp: false} : e)); } }} className="w-full bg-zinc-950 hover:bg-zinc-800 text-[10px] font-bold uppercase tracking-widest py-4 rounded-xl border border-zinc-800 transition-all flex items-center justify-center gap-2 group/btn">
+                                <CheckCircle2 size={16} className="text-zinc-500 group-hover/btn:text-green-500 transition-colors" /> Resolver Pedido
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
                   ) : (<div className="bg-zinc-950/30 border-2 border-dashed border-zinc-900 py-32 rounded-3xl text-center"><CheckCircle2 size={48} className="mx-auto text-zinc-800 mb-6" /><div className="text-2xl font-bold uppercase tracking-[0.2em] text-zinc-700">Todos os ajustes realizados</div></div>)}
                </section>
             </motion.div>

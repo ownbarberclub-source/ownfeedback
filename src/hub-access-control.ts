@@ -99,7 +99,9 @@ function showBlockedScreen(): void {
   document.body.innerHTML = `
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#000;font-family:'Space Grotesk','Segoe UI',sans-serif;padding:24px;">
       <div style="text-align:center;max-width:440px;">
-        <div style="width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#E10600,#B00400);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:32px;">✂️</div>
+        <div style="width:120px;height:120px;background:rgba(255,255,255,0.05);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 32px;border:1px solid rgba(255,255,255,0.1);padding:20px;">
+          <img src="https://ownbarberclublp.vercel.app/assets/logo.png" style="width:100%;height:100%;object-fit:contain;filter:brightness(0) invert(1);" />
+        </div>
         <div style="font-size:32px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:-0.02em;margin-bottom:8px;font-style:italic;font-family:'Titillium Web',sans-serif;">
           OWN <span style="color:#E10600">HUB</span>
         </div>
