@@ -164,7 +164,7 @@ export default function App() {
     e.preventDefault();
     if (!newEval.barberId || !newEval.clientName) return;
     const evaluation: Evaluation = {
-      id: crypto.randomUUID(), ...(newEval as Evaluation), rating: newEval.satisfactionLevel || 5,
+      ...(newEval as Evaluation), id: crypto.randomUUID(), rating: newEval.satisfactionLevel || 5,
       hadReturnRequest: newEval.needsFollowUp,
       date: new Date().toISOString(), season: `${new Date().getFullYear()}`
     };

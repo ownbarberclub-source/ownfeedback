@@ -64,6 +64,9 @@ export interface Evaluation {
   // 16. Nível de satisfação percebido (1-5)
   satisfactionLevel: number;
   
+  // 17. Recomendaria
+  wouldRecommend: boolean;
+  
   // Média para compatibilidade (usaremos satisfactionLevel)
   rating: number; 
 

@@ -21,6 +21,8 @@ interface HubSession {
   expiresAt: number;
 }
 
+export {};
+
 declare global {
   interface Window {
     __OWN_HUB_SESSION__?: HubSession;
