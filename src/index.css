@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #DC2626;
+  --color-charcoal: #09090B;
+  --color-zinc-deep: #18181B;
+  --color-zinc-border: #27272A;
+  
+  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-black text-zinc-100 font-sans;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl relative overflow-hidden;
+  }
+  
+  .btn-primary {
+    @apply bg-brand hover:bg-red-700 text-white font-bold py-4 px-8 rounded-xl transition-all active:scale-95 shadow-[0_10px_20px_rgba(220,38,38,0.2)];
+  }
+  
+  .input-field {
+    @apply bg-zinc-950 border border-zinc-800 rounded-xl py-4 px-5 text-white outline-none focus:border-brand focus:ring-1 focus:ring-brand/50 transition-all w-full;
+  }
+
+  .nav-item {
+     @apply w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all;
+  }
+  
+  .nav-item-active {
+     @apply bg-zinc-800 text-white shadow-lg border border-zinc-700;
+  }
+  
+  .nav-item-inactive {
+     @apply text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900/50;
+  }
+}
+
+/* Custom Utilities for the Premium Theme */
+.text-glow {
+  text-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+}
+
+.bg-mesh {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(220, 38, 38, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(220, 38, 38, 0.03) 0px, transparent 50%);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
