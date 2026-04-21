@@ -72,6 +72,7 @@ export default function App() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // -- Form States --
+  const [newUnitName, setNewUnitName] = useState('');
   const [newBarber, setNewBarber] = useState({ name: '', unitId: '' });
   
   const [newEval, setNewEval] = useState<Partial<Evaluation>>({ 
@@ -271,6 +272,16 @@ export default function App() {
   }, [pilotCards]);
 
   // --- Handlers ---
+  const handleAddUnit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUnitName.trim()) return;
+    const newId = crypto.randomUUID();
+    const newU = { id: newId, name: newUnitName.toUpperCase() };
+    setUnits([...units, newU]);
+    await supabase.from('feedback_units').insert([newU]);
+    setNewUnitName('');
+  };
+
   const handleAddBarber = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBarber.name || !newBarber.unitId) return;
@@ -701,6 +712,23 @@ export default function App() {
                <div className="grid grid-cols-1 xl:grid-cols-2 gap-20">
                   <div className="space-y-12">
                     <h3 className="text-2xl font-black uppercase text-zinc-400 tracking-tight flex items-center gap-4"><MapPin className="text-brand" size={24}/> Unidades Operacionais</h3>
+                    
+                    <div className="card p-8 bg-zinc-950/40 mb-8">
+                      <form onSubmit={handleAddUnit} className="flex gap-4">
+                        <input 
+                          type="text" 
+                          placeholder="Nome da Nova Unidade..." 
+                          className="input-field text-sm font-bold uppercase flex-1" 
+                          value={newUnitName} 
+                          onChange={e => setNewUnitName(e.target.value)} 
+                          required 
+                        />
+                        <button type="submit" className="bg-brand text-white font-black uppercase text-xs px-8 rounded-xl py-4 shadow-xl hover:bg-red-700 transition-all flex items-center gap-2">
+                          <Plus size={16} /> Adicionar Base
+                        </button>
+                      </form>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">{units.map(u => (<div key={u.id} className="card p-12 group hover:border-brand/40 transition-colors"><Flag className="absolute right-[-20px] top-[-20px] opacity-[0.03] group-hover:opacity-[0.08] transition-opacity" size={140}/><div className="text-4xl font-black uppercase leading-tight mb-4 tracking-tighter">{u.name}</div><div className="text-[10px] font-bold tracking-[0.4em] text-zinc-600 uppercase">Unidade Ativa</div></div>))}</div>
                   </div>
                   <div className="space-y-12">
