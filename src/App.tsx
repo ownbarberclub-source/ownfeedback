@@ -84,6 +84,50 @@ export default function App() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const loadData = async () => {
+    // Carrega unidades do Supabase
+    const { data: dbUnits } = await supabase.from('feedback_units').select('*').order('name');
+    if (dbUnits) {
+      setUnits(dbUnits.map(u => ({ id: u.id, name: u.name })));
+    }
+
+    // Carrega barbeiros do Supabase
+    const { data: dbBarbers } = await supabase.from('feedback_barbers').select('*').order('name');
+    if (dbBarbers) {
+      setBarbers(dbBarbers.map(b => ({ id: b.id, name: b.name, unitId: b.unit_id })));
+    }
+
+    // Carrega avaliações do Supabase
+    const { data: dbEvals } = await supabase.from('feedback_evaluations').select('*').order('created_at', { ascending: false });
+    if (dbEvals) {
+      setEvaluations(dbEvals.map(e => ({
+        id: e.id,
+        clientName: e.client_name,
+        unitId: e.unit_id,
+        barberId: e.barber_id,
+        serviceDate: e.service_date,
+        serviceTime: e.service_time,
+        clientArrivalStatus: e.client_arrival_status,
+        serviceStartStatus: e.service_start_status,
+        complaintStatus: e.complaint_status,
+        leftFeedback: e.left_feedback,
+        feedbackDescription: e.feedback_description,
+        isSubscriber: e.is_subscriber,
+        offeredSubscription: e.offered_subscription,
+        subscriptionInterest: e.subscription_interest,
+        needsFollowUp: e.needs_follow_up,
+        generalNotes: e.general_notes,
+        satisfactionLevel: e.satisfaction_level,
+        problemDescription: e.problem_description,
+        wouldRecommend: e.satisfaction_level >= 4,
+        hadReturnRequest: e.needs_follow_up,
+        rating: e.satisfaction_level,
+        date: e.created_at,
+        season: new Date(e.created_at).getFullYear().toString(),
+      })));
+    }
+  };
+
   // --- Hub SSO Authentication ---
   useEffect(() => {
     const initAuth = async () => {
@@ -174,65 +218,6 @@ export default function App() {
 
     initAuth();
   }, []);
-
-  const loadData = async () => {
-      // Carrega unidades do Supabase
-      const { data: dbUnits } = await supabase.from('feedback_units').select('*').order('name');
-      if (dbUnits && dbUnits.length > 0) {
-        setUnits(dbUnits.map(u => ({ id: u.id, name: u.name })));
-      } else {
-        // Fallback: localStorage
-        const saved = localStorage.getItem(STORAGE_KEYS.UNITS);
-        if (saved) setUnits(JSON.parse(saved)); else setUnits(INITIAL_UNITS);
-      }
-
-      // Carrega barbeiros do Supabase
-      const { data: dbBarbers } = await supabase.from('feedback_barbers').select('*').order('name');
-      if (dbBarbers && dbBarbers.length > 0) {
-        setBarbers(dbBarbers.map(b => ({ id: b.id, name: b.name, unitId: b.unit_id })));
-      } else {
-        const saved = localStorage.getItem(STORAGE_KEYS.BARBERS);
-        if (saved) setBarbers(JSON.parse(saved));
-        else setBarbers(BARBER_LIST.map((b, idx) => ({ id: (idx + 1).toString(), name: b.name, unitId: b.unitId })));
-      }
-
-      // Carrega avaliações do Supabase
-      const { data: dbEvals } = await supabase.from('feedback_evaluations').select('*').order('created_at', { ascending: false });
-      if (dbEvals && dbEvals.length > 0) {
-        setEvaluations(dbEvals.map(e => ({
-          id: e.id,
-          clientName: e.client_name,
-          unitId: e.unit_id,
-          barberId: e.barber_id,
-          serviceDate: e.service_date,
-          serviceTime: e.service_time,
-          clientArrivalStatus: e.client_arrival_status,
-          serviceStartStatus: e.service_start_status,
-          complaintStatus: e.complaint_status,
-          leftFeedback: e.left_feedback,
-          feedbackDescription: e.feedback_description,
-          isSubscriber: e.is_subscriber,
-          offeredSubscription: e.offered_subscription,
-          subscriptionInterest: e.subscription_interest,
-          needsFollowUp: e.needs_follow_up,
-          generalNotes: e.general_notes,
-          satisfactionLevel: e.satisfaction_level,
-          problemDescription: e.problem_description,
-          wouldRecommend: e.satisfaction_level >= 4,
-          hadReturnRequest: e.needs_follow_up,
-          rating: e.satisfaction_level,
-          date: e.created_at,
-          season: new Date(e.created_at).getFullYear().toString(),
-        })));
-      } else {
-        const saved = localStorage.getItem(STORAGE_KEYS.EVALUATIONS);
-        if (saved) setEvaluations(JSON.parse(saved));
-      }
-    };
-
-    loadData();
-  }, []);
-
 
   // --- Computed Filters ---
   const filteredEvaluations = useMemo(() => {

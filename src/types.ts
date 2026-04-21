@@ -73,22 +73,5 @@ export interface Evaluation {
   season: string; // ex: "2026"
 }
 
-export const INITIAL_UNITS: Unit[] = [
-  { id: 'centro', name: 'Centro' },
-  { id: 'avenida', name: 'Avenida' },
-  { id: 'efapi', name: 'Efapi' },
-];
-
-export const BARBER_LIST: {name: string, unitId: string}[] = [
-  { name: 'JOHN', unitId: 'centro' },
-  { name: 'VITOR', unitId: 'centro' },
-  { name: 'THIAGO', unitId: 'centro' },
-  { name: 'DOUGLAS', unitId: 'centro' },
-  { name: 'JULIO', unitId: 'centro' },
-  { name: 'ADILSON', unitId: 'centro' },
-  { name: 'NASSER', unitId: 'avenida' },
-  { name: 'HERNALDO', unitId: 'avenida' },
-  { name: 'KAIQUE', unitId: 'efapi' },
-  { name: 'CARLOS', unitId: 'efapi' },
-  { name: 'CADU', unitId: 'efapi' },
-];
+export const INITIAL_UNITS: Unit[] = [];
+export const BARBER_LIST: {name: string, unitId: string}[] = [];
