@@ -146,13 +146,13 @@ export default function App() {
   // --- Realtime Data Synchronization ---
   useEffect(() => {
     const channel = supabase.channel('realtime-feedback-sync')
-      .on('postgres', { event: '*', schema: 'public', table: 'feedback_evaluations' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_evaluations' }, () => {
         loadData();
       })
-      .on('postgres', { event: '*', schema: 'public', table: 'feedback_units' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_units' }, () => {
         loadData();
       })
-      .on('postgres', { event: '*', schema: 'public', table: 'feedback_barbers' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_barbers' }, () => {
         loadData();
       })
       .subscribe();
