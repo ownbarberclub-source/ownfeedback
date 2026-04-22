@@ -391,7 +391,8 @@ export default function App() {
                   <div className="flex items-center gap-3 text-zinc-500 mb-6">
                      <Trophy size={18} className="text-yellow-500" />
                      <span className="text-xs font-bold uppercase tracking-widest">Liderança da Temporada</span>
-                            {pilotCards.map((pilot, index) => (
+                  </div>
+                  {pilotCards.map((pilot, index) => (
                     <motion.div key={pilot.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}
                       className={`flex items-center gap-5 p-5 card transition-all border-l-4 ${index < 3 ? 'border-brand' : 'border-zinc-900 hover:bg-zinc-900/50 hover:border-zinc-800'}`}>
                       <div className="w-12 md:w-16 flex flex-col items-center justify-center shrink-0">
@@ -472,7 +473,7 @@ export default function App() {
                       <p className="text-[10px] leading-relaxed text-zinc-500 uppercase font-bold text-justify">Pedidos de ajuste impactam diretamente a posição do profissional no ranking, mesmo após a resolução.</p>
                    </div>
                 </div>
-
+              </div>
             </motion.div>
           )}
 
