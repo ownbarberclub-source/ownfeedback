@@ -103,38 +103,42 @@ export default function App() {
     }
 
     // Carrega barbeiros do Supabase
-    const { data: dbBarbers } = await supabase.from('previa_barbers').select('*').order('name');
+    const { data: dbBarbers, error: barbersError } = await supabase.from('previa_barbers').select('*').order('name');
+    if (barbersError) console.error('Erro ao carregar barbeiros:', barbersError);
     if (dbBarbers) {
       setBarbers(dbBarbers.map(b => ({ id: b.id, name: b.name, unitId: b.unit_id })));
     }
 
     // Carrega avaliações do Supabase
-    const { data: dbEvals } = await supabase.from('feedback_evaluations').select('*').order('created_at', { ascending: false });
+    const { data: dbEvals, error: evalsError } = await supabase.from('feedback_evaluations').select('*').order('created_at', { ascending: false });
+    if (evalsError) {
+      console.error('Erro ao carregar avaliações:', evalsError);
+    }
     if (dbEvals) {
       setEvaluations(dbEvals.map(e => ({
         id: e.id,
-        clientName: e.client_name,
-        unitId: e.unit_id,
-        barberId: e.barber_id,
-        serviceDate: e.service_date,
-        serviceTime: e.service_time,
-        clientArrivalStatus: e.client_arrival_status,
-        serviceStartStatus: e.service_start_status,
-        complaintStatus: e.complaint_status,
-        leftFeedback: e.left_feedback,
-        feedbackDescription: e.feedback_description,
-        isSubscriber: e.is_subscriber,
-        offeredSubscription: e.offered_subscription,
-        subscriptionInterest: e.subscription_interest,
-        needsFollowUp: e.needs_follow_up,
-        generalNotes: e.general_notes,
-        satisfactionLevel: e.satisfaction_level,
-        problemDescription: e.problem_description,
-        wouldRecommend: e.satisfaction_level >= 4,
-        hadReturnRequest: e.needs_follow_up,
-        rating: e.satisfaction_level,
+        clientName: e.client_name || '',
+        unitId: e.unit_id || '',
+        barberId: e.barber_id || '',
+        serviceDate: e.service_date || '',
+        serviceTime: e.service_time || '',
+        clientArrivalStatus: e.client_arrival_status || 'SIM',
+        serviceStartStatus: e.service_start_status || 'SIM',
+        complaintStatus: e.complaint_status || 'NÃO',
+        leftFeedback: !!e.left_feedback,
+        feedbackDescription: e.feedback_description || '',
+        isSubscriber: !!e.is_subscriber,
+        offeredSubscription: !!e.offered_subscription,
+        subscriptionInterest: e.subscription_interest || 'NENHUM',
+        needsFollowUp: !!e.needs_follow_up,
+        generalNotes: e.general_notes || '',
+        satisfactionLevel: e.satisfaction_level || 5,
+        problemDescription: e.problem_description || '',
+        wouldRecommend: (e.satisfaction_level || 5) >= 4,
+        hadReturnRequest: !!e.needs_follow_up,
+        rating: e.satisfaction_level || 5,
         date: e.created_at,
-        season: new Date(e.created_at).getFullYear().toString(),
+        season: e.created_at ? new Date(e.created_at).getFullYear().toString() : new Date().getFullYear().toString(),
       })));
     }
   };
@@ -250,28 +254,28 @@ export default function App() {
     // Salva no Supabase
     const { error } = await supabase.from('feedback_evaluations').insert([{
       id,
-      unit_id: newEval.unitId,
-      barber_id: newEval.barberId,
-      client_name: newEval.clientName,
-      service_date: newEval.serviceDate,
-      service_time: newEval.serviceTime,
-      client_arrival_status: newEval.clientArrivalStatus,
-      service_start_status: newEval.serviceStartStatus,
-      complaint_status: newEval.complaintStatus,
-      left_feedback: newEval.leftFeedback,
-      feedback_description: newEval.feedbackDescription,
-      is_subscriber: newEval.isSubscriber,
-      offered_subscription: newEval.offeredSubscription,
-      subscription_interest: newEval.subscriptionInterest,
-      needs_follow_up: newEval.needsFollowUp,
-      general_notes: newEval.generalNotes,
-      satisfaction_level: newEval.satisfactionLevel,
-      problem_description: newEval.problemDescription,
+      unit_id: newEval.unitId || null,
+      barber_id: newEval.barberId || null,
+      client_name: newEval.clientName || 'CLIENTE',
+      service_date: newEval.serviceDate || new Date().toISOString().split('T')[0],
+      service_time: newEval.serviceTime || '',
+      client_arrival_status: newEval.clientArrivalStatus || 'SIM',
+      service_start_status: newEval.serviceStartStatus || 'SIM',
+      complaint_status: newEval.complaintStatus || 'NÃO',
+      left_feedback: !!newEval.leftFeedback,
+      feedback_description: newEval.feedbackDescription || '',
+      is_subscriber: !!newEval.isSubscriber,
+      offered_subscription: !!newEval.offeredSubscription,
+      subscription_interest: newEval.subscriptionInterest || 'NENHUM',
+      needs_follow_up: !!newEval.needsFollowUp,
+      general_notes: newEval.generalNotes || '',
+      satisfaction_level: newEval.satisfactionLevel || 5,
+      problem_description: newEval.problemDescription || '',
     }]);
 
     if (error) {
-      console.error('Erro ao salvar avaliação:', error);
-      alert('Erro ao salvar avaliação: ' + error.message);
+      console.error('Erro detalhado ao salvar:', error);
+      alert('ERRO DE BANCO DE DADOS: ' + error.message + '\n\nCertifique-se de que executou o SQL de atualização da tabela.');
       return;
     }
 
