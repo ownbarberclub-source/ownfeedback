@@ -97,13 +97,13 @@ export default function App() {
 
   const loadData = async () => {
     // Carrega unidades do Supabase
-    const { data: dbUnits } = await supabase.from('feedback_units').select('*').order('name');
+    const { data: dbUnits } = await supabase.from('previa_units').select('*').order('name');
     if (dbUnits) {
       setUnits(dbUnits.map(u => ({ id: u.id, name: u.name })));
     }
 
     // Carrega barbeiros do Supabase
-    const { data: dbBarbers } = await supabase.from('feedback_barbers').select('*').order('name');
+    const { data: dbBarbers } = await supabase.from('previa_barbers').select('*').order('name');
     if (dbBarbers) {
       setBarbers(dbBarbers.map(b => ({ id: b.id, name: b.name, unitId: b.unit_id })));
     }
@@ -149,10 +149,10 @@ export default function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_evaluations' }, () => {
         loadData();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_units' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'previa_units' }, () => {
         loadData();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_barbers' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'previa_barbers' }, () => {
         loadData();
       })
       .subscribe();
@@ -222,7 +222,7 @@ export default function App() {
     const newId = crypto.randomUUID();
     const newU = { id: newId, name: newUnitName.toUpperCase() };
     setUnits([...units, newU]);
-    await supabase.from('feedback_units').insert([newU]);
+    await supabase.from('previa_units').insert([newU]);
     setNewUnitName('');
   };
 
@@ -231,7 +231,7 @@ export default function App() {
     if (!newBarber.name || !newBarber.unitId) return;
     const newB = { id: crypto.randomUUID(), name: newBarber.name.toUpperCase(), unitId: newBarber.unitId };
     setBarbers([...barbers, newB]);
-    await supabase.from('feedback_barbers').insert([{ id: newB.id, name: newB.name, unit_id: newB.unitId }]);
+    await supabase.from('previa_barbers').insert([{ id: newB.id, name: newB.name, unit_id: newB.unitId }]);
     setNewBarber({ name: '', unitId: '' });
   };
 
