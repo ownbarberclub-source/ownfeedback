@@ -37,7 +37,9 @@ import {
   TrendingDown,
   Skull,
   Lock,
-  Plus
+  Plus,
+  Database,
+  Edit2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LogoLocal from './assets/logo.png';
@@ -55,7 +57,7 @@ const MONTHS = [
   'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
 ];
 
-type Tab = 'dashboard' | 'feedback' | 'metrics' | 'team';
+type Tab = 'dashboard' | 'metrics' | 'feedback' | 'team' | 'records';
 
 export default function App() {
   // --- State ---
@@ -239,20 +241,37 @@ export default function App() {
     setNewBarber({ name: '', unitId: '' });
   };
 
+  const handleDeleteEval = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta avaliação permanentemente?')) return;
+    const { error } = await supabase.from('feedback_evaluations').delete().eq('id', id);
+    if (error) {
+      alert('Erro ao excluir: ' + error.message);
+    } else {
+      setEvaluations(evaluations.filter(e => e.id !== id));
+    }
+  };
+
+  const handleEditEval = (evaluation: Evaluation) => {
+    setNewEval(evaluation);
+    setActiveTab('feedback');
+  };
+
   const handleSubmitEval = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEval.barberId || !newEval.clientName) return;
 
-    const id = crypto.randomUUID();
+    const isEditing = !!newEval.id;
+    const id = newEval.id || crypto.randomUUID();
     const now = new Date().toISOString();
     const evaluation: Evaluation = {
       ...(newEval as Evaluation), id, rating: newEval.satisfactionLevel || 5,
       hadReturnRequest: newEval.needsFollowUp,
-      date: now, season: `${new Date().getFullYear()}`
+      date: isEditing ? (newEval.date || now) : now, 
+      season: isEditing ? (newEval.season || `${new Date().getFullYear()}`) : `${new Date().getFullYear()}`
     };
 
-    // Salva no Supabase
-    const { error } = await supabase.from('feedback_evaluations').insert([{
+    // Salva no Supabase (Upsert)
+    const { error } = await supabase.from('feedback_evaluations').upsert([{
       id,
       unit_id: newEval.unitId || null,
       barber_id: newEval.barberId || null,
@@ -279,7 +298,11 @@ export default function App() {
       return;
     }
 
-    setEvaluations([evaluation, ...evaluations]);
+    if (isEditing) {
+      setEvaluations(evaluations.map(e => e.id === id ? evaluation : e));
+    } else {
+      setEvaluations([evaluation, ...evaluations]);
+    }
     setNewEval({ 
         clientName: '', unitId: '', barberId: '', serviceDate: new Date().toISOString().split('T')[0], serviceTime: '',
         clientArrivalStatus: 'SIM', serviceStartStatus: 'SIM', problemDescription: '', complaintStatus: 'NÃO', 
@@ -310,7 +333,8 @@ export default function App() {
           {[
             { id: 'dashboard', icon: LayoutGrid, label: 'Ranking' },
             { id: 'metrics', icon: TrendingUp, label: 'Performance' },
-            { id: 'feedback', icon: ClipboardList, label: 'Avaliações' },
+            { id: 'records', icon: Database, label: 'Avaliações' },
+            { id: 'feedback', icon: ClipboardList, label: 'Novo Registro' },
             { id: 'team', icon: Users, label: 'Unidades & Time' },
           ].map((item) => (
             <button
@@ -718,6 +742,74 @@ export default function App() {
                     </div>
                   </div>
                </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'records' && (
+            <motion.div key="records" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-12 pb-32">
+              <header className="flex items-center justify-between border-b border-zinc-900 pb-12">
+                 <div className="flex items-center gap-8">
+                   <div className="w-16 h-16 bg-zinc-900 rounded-3xl flex items-center justify-center shadow-xl border border-zinc-800 text-brand"><Database size={32} /></div>
+                   <div>
+                     <h1 className="text-4xl font-black tracking-tighter uppercase leading-none font-display">GESTÃO DE <span className="text-brand">AVALIAÇÕES.</span></h1>
+                     <p className="text-zinc-500 uppercase font-bold tracking-[0.4em] text-[8px] mt-2">Histórico Completo de Telemetria</p>
+                   </div>
+                 </div>
+                 <button onClick={() => setActiveTab('feedback')} className="bg-brand/10 text-brand border border-brand/20 px-8 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-brand hover:text-white transition-all flex items-center gap-3"><ClipboardList size={16}/> Novo Registro</button>
+              </header>
+
+              <div className="bg-zinc-900/40 rounded-3xl border border-zinc-900 overflow-hidden backdrop-blur-sm">
+                <div className="overflow-x-auto no-scrollbar">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-zinc-950/50 border-b border-zinc-900">
+                        <th className="p-6 text-[9px] font-black uppercase tracking-widest text-zinc-500">Data</th>
+                        <th className="p-6 text-[9px] font-black uppercase tracking-widest text-zinc-500">Cliente</th>
+                        <th className="p-6 text-[9px] font-black uppercase tracking-widest text-zinc-500">Barbeiro</th>
+                        <th className="p-6 text-[9px] font-black uppercase tracking-widest text-zinc-500 text-center">Nível</th>
+                        <th className="p-6 text-[9px] font-black uppercase tracking-widest text-zinc-500">Status</th>
+                        <th className="p-6 text-[9px] font-black uppercase tracking-widest text-zinc-500 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-900/50">
+                      {evaluations.map(e => (
+                        <tr key={e.id} className="hover:bg-white/[0.02] transition-colors group">
+                          <td className="p-6">
+                            <div className="text-xs font-bold text-white">{new Date(e.serviceDate || e.date).toLocaleDateString('pt-BR')}</div>
+                            <div className="text-[8px] font-bold text-zinc-600 uppercase tracking-tighter">{e.serviceTime || '--:--'}</div>
+                          </td>
+                          <td className="p-6">
+                             <div className="text-xs font-black uppercase tracking-tight text-white">{e.clientName}</div>
+                             <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{units.find(u => u.id === e.unitId)?.name}</div>
+                          </td>
+                          <td className="p-6">
+                             <div className="text-xs font-bold text-zinc-400 uppercase">{barbers.find(b => b.id === e.barberId)?.name || '---'}</div>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex items-center justify-center gap-1">
+                              {Array.from({length: 5}).map((_, i) => (
+                                <Star key={i} size={10} className={i < e.satisfactionLevel ? 'text-yellow-500' : 'text-zinc-800'} fill={i < e.satisfactionLevel ? 'currentColor' : 'none'} />
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex gap-2">
+                              {e.needsFollowUp && <span className="bg-brand/10 text-brand border border-brand/20 px-2 py-0.5 rounded text-[7px] font-black uppercase">Ajuste</span>}
+                              {e.isSubscriber && <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 px-2 py-0.5 rounded text-[7px] font-black uppercase">Assinante</span>}
+                            </div>
+                          </td>
+                          <td className="p-6 text-right">
+                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <button onClick={() => handleEditEval(e)} className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white hover:border-zinc-600 transition-all"><Edit2 size={14} /></button>
+                               <button onClick={() => handleDeleteEval(e.id)} className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-brand hover:border-brand/40 transition-all"><Trash2 size={14} /></button>
+                             </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
