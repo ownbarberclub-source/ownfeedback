@@ -332,9 +332,9 @@ export default function App() {
         <nav className="flex-1 px-4 space-y-1 mt-2">
           {[
             { id: 'dashboard', icon: LayoutGrid, label: 'Ranking' },
+            { id: 'feedback', icon: ClipboardList, label: 'Novo Registro' },
             { id: 'metrics', icon: TrendingUp, label: 'Performance' },
             { id: 'records', icon: Database, label: 'Avaliações' },
-            { id: 'feedback', icon: ClipboardList, label: 'Novo Registro' },
             { id: 'team', icon: Users, label: 'Unidades & Time' },
           ].map((item) => (
             <button
