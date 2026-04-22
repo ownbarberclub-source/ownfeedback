@@ -291,18 +291,18 @@ export default function App() {
     <div className="min-h-screen flex flex-col md:flex-row bg-black relative overflow-hidden text-zinc-100 font-sans antialiased bg-mesh">
       
       {/* Sidebar */}
-      <aside className="w-full md:w-80 bg-zinc-950 border-r border-zinc-900 flex flex-col z-50 relative shrink-0">
-        <div className="p-10 text-center">
-          <div className="w-24 h-24 bg-white/5 rounded-2xl p-4 mx-auto flex items-center justify-center border border-zinc-800 shadow-xl group hover:border-brand/40 transition-colors">
+      <aside className="w-full md:w-72 bg-[#09090b] border-r border-zinc-900 flex flex-col z-50 relative shrink-0">
+        <div className="p-8 text-center">
+          <div className="w-16 h-16 bg-white/5 rounded-xl p-3 mx-auto flex items-center justify-center border border-zinc-800 shadow-xl group hover:border-brand/40 transition-colors">
             <img src={LogoLocal} alt="Own Barber Club" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} onError={(e) => { e.currentTarget.src = "https://ownbarberclublp.vercel.app/assets/logo.png" }} />
           </div>
-          <div className="mt-6">
-            <div className="text-2xl font-black tracking-tighter uppercase">OWN <span className="text-brand">FEEDBACK</span></div>
-            <div className="text-[10px] uppercase tracking-[0.4em] font-medium text-zinc-500 mt-2">Professional Control</div>
+          <div className="mt-4">
+            <div className="text-xl font-black tracking-tighter uppercase font-display">OWN <span className="text-brand">FEEDBACK</span></div>
+            <div className="text-[8px] uppercase tracking-[0.3em] font-bold text-zinc-600 mt-1">Professional Intelligence</div>
           </div>
         </div>
 
-        <nav className="flex-1 px-6 space-y-2 mt-4">
+        <nav className="flex-1 px-4 space-y-1 mt-2">
           {[
             { id: 'dashboard', icon: LayoutGrid, label: 'Ranking' },
             { id: 'metrics', icon: TrendingUp, label: 'Performance' },
@@ -312,11 +312,11 @@ export default function App() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as Tab)}
-              className={`nav-item ${activeTab === item.id ? 'nav-item-active' : 'nav-item-inactive'}`}
+              className={`nav-item ${activeTab === item.id ? 'nav-item-active' : 'nav-item-inactive'} !py-3 !px-5`}
             >
-              <item.icon size={20} className={activeTab === item.id ? 'text-brand' : ''} />
-              <span className="font-bold text-sm tracking-tight">{item.label}</span>
-              {activeTab === item.id && <div className="ml-auto w-1.5 h-1.5 bg-brand rounded-full shadow-[0_0_8px_rgba(220,38,38,0.8)]" />}
+              <item.icon size={18} className={activeTab === item.id ? 'text-brand' : ''} />
+              <span className="font-bold text-xs tracking-tight">{item.label}</span>
+              {activeTab === item.id && <div className="ml-auto w-1 h-1 bg-brand rounded-full shadow-[0_0_8px_rgba(220,38,38,0.8)]" />}
             </button>
           ))}
         </nav>
@@ -333,7 +333,7 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-12 lg:p-14 overflow-y-auto relative no-scrollbar">
+      <main className="flex-1 p-6 md:p-10 lg:p-12 overflow-y-auto relative no-scrollbar">
         
         {/* Header Seletor Estilo Moderno */}
         <div className="sticky top-0 z-40 mb-12 flex flex-wrap items-center justify-between gap-8 bg-black/60 backdrop-blur-xl p-6 md:p-8 rounded-2xl border border-zinc-900 shadow-2xl">
@@ -361,18 +361,18 @@ export default function App() {
           {/* DASHBOARD - LAYOUT LADO A LADO */}
           {activeTab === 'dashboard' && (
             <motion.div key="db" initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="space-y-12">
-              <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-zinc-900 pb-8">
+              <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-zinc-900 pb-6">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="bg-brand/10 text-brand font-bold px-3 py-1 rounded-md text-[10px] uppercase tracking-wider border border-brand/20">Performance</span>
-                    <span className="text-zinc-500 font-bold text-[10px] uppercase tracking-[0.3em]">{viewMode === 'mensal' ? `${MONTHS[selectedMonth]} ${selectedYear}` : `ANUAL ${selectedYear}`}</span>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="bg-brand/10 text-brand font-bold px-3 py-1 rounded-md text-[9px] uppercase tracking-wider border border-brand/20">Performance</span>
+                    <span className="text-zinc-500 font-bold text-[9px] uppercase tracking-[0.3em]">{viewMode === 'mensal' ? `${MONTHS[selectedMonth]} ${selectedYear}` : `ANUAL ${selectedYear}`}</span>
                   </div>
-                  <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none">THE <span className="text-brand">RANK.</span></h1>
+                  <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none font-display">THE <span className="text-brand">RANK.</span></h1>
                 </div>
-                <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800">
-                  <MapPin size={16} className="ml-4 text-zinc-500" />
+                <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-xl border border-zinc-800">
+                  <MapPin size={14} className="ml-3 text-zinc-500" />
                   <select 
-                    className="bg-transparent text-white font-bold uppercase text-xs outline-none cursor-pointer hover:text-brand transition-colors py-2 pr-4"
+                    className="bg-transparent text-white font-bold uppercase text-[10px] outline-none cursor-pointer hover:text-brand transition-colors py-1.5 pr-3"
                     value={selectedUnitFilter}
                     onChange={(e) => setSelectedUnitFilter(e.target.value)}
                   >
@@ -391,40 +391,39 @@ export default function App() {
                   <div className="flex items-center gap-3 text-zinc-500 mb-6">
                      <Trophy size={18} className="text-yellow-500" />
                      <span className="text-xs font-bold uppercase tracking-widest">Liderança da Temporada</span>
-                  </div>
-                  {pilotCards.map((pilot, index) => (
+                            {pilotCards.map((pilot, index) => (
                     <motion.div key={pilot.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}
-                      className={`flex items-center gap-6 p-6 card transition-all border-l-4 ${index < 3 ? 'border-brand' : 'border-zinc-800 hover:bg-zinc-900/50'}`}>
-                      <div className="w-16 md:w-20 flex flex-col items-center justify-center shrink-0">
-                        <span className={`text-4xl md:text-5xl font-black tracking-tighter leading-none ${index === 0 ? 'text-brand' : index < 3 ? 'text-white' : 'text-zinc-800'}`}>P{index + 1}</span>
+                      className={`flex items-center gap-5 p-5 card transition-all border-l-4 ${index < 3 ? 'border-brand' : 'border-zinc-900 hover:bg-zinc-900/50 hover:border-zinc-800'}`}>
+                      <div className="w-12 md:w-16 flex flex-col items-center justify-center shrink-0">
+                        <span className={`text-3xl md:text-4xl font-black tracking-tighter leading-none font-display ${index === 0 ? 'text-brand' : index < 3 ? 'text-white' : 'text-zinc-800'}`}>P{index + 1}</span>
                       </div>
                       
-                      <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden">
-                        <div className="flex items-center gap-6 overflow-hidden">
+                      <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden">
+                        <div className="flex items-center gap-5 overflow-hidden">
                            <div className="relative shrink-0">
-                              <div className={`w-20 h-20 bg-zinc-950 rounded-xl border flex items-center justify-center overflow-hidden relative z-10 ${index < 3 ? 'border-brand/40' : 'border-zinc-800'}`}>
+                              <div className={`w-14 h-14 bg-zinc-950 rounded-lg border flex items-center justify-center overflow-hidden relative z-10 ${index < 3 ? 'border-brand/40' : 'border-zinc-800'}`}>
                                  <img src={`https://ownbarberclublp.vercel.app/assets/equipe-${pilot.name.toLowerCase()}.JPG`} alt={pilot.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                                 <span className="absolute inset-0 flex items-center justify-center text-zinc-900 font-black text-2xl">{pilot.name.substring(0,2)}</span>
+                                 <span className="absolute inset-0 flex items-center justify-center text-zinc-900 font-black text-xl">{pilot.name.substring(0,2)}</span>
                               </div>
-                              {index === 0 && <div className="absolute -top-2 -right-2 bg-brand text-white rounded-full p-1.5 shadow-lg z-20 border-2 border-zinc-950 scale-75"><Award size={20} /></div>}
+                              {index === 0 && <div className="absolute -top-1 -right-1 bg-brand text-white rounded-full p-1 shadow-lg z-20 border border-zinc-950 scale-75"><Award size={16} /></div>}
                            </div>
                           <div className="min-w-0">
-                            <h3 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-none mb-2 truncate">{pilot.name}</h3>
-                            <div className="flex items-center gap-3">
+                            <h3 className="text-xl md:text-2xl font-black tracking-tight uppercase leading-none mb-1 truncate font-display">{pilot.name}</h3>
+                            <div className="flex items-center gap-2">
                                <div className="flex items-center gap-1.5">
-                                  <MapPin size={10} className="text-brand" />
-                                  <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 truncate">{units.find(u => u.id === pilot.unitId)?.name}</span>
+                                  <MapPin size={8} className="text-brand" />
+                                  <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-500 truncate">{units.find(u => u.id === pilot.unitId)?.name}</span>
                                </div>
-                               <div className="w-1 h-1 bg-zinc-800 rounded-full" />
-                               <div className="flex gap-1.5">
-                                  {pilot.medals.slice(0, 3).map(m => (<m.icon key={m.id} size={12} className={m.color} />))}
+                               <div className="w-0.5 h-0.5 bg-zinc-800 rounded-full" />
+                               <div className="flex gap-1">
+                                  {pilot.medals.slice(0, 3).map(m => (<m.icon key={m.id} size={10} className={m.color} />))}
                                </div>
                             </div>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="text-4xl font-black tracking-tighter leading-none text-glow">{pilot.satisfAvg.toFixed(2)}</div>
-                          <div className="text-[8px] font-bold uppercase tracking-widest text-zinc-600 mt-1">Média</div>
+                          <div className="text-3xl font-black tracking-tighter leading-none text-glow font-display">{pilot.satisfAvg.toFixed(2)}</div>
+                          <div className="text-[7px] font-bold uppercase tracking-widest text-zinc-600 mt-0.5">Média</div>
                         </div>
                       </div>
                     </motion.div>
@@ -474,21 +473,20 @@ export default function App() {
                    </div>
                 </div>
 
-              </div>
             </motion.div>
           )}
 
           {/* PERFORMANCE TAB */}
           {activeTab === 'metrics' && (
-            <motion.div key="metrics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-16 pb-20">
-               <header className="flex flex-col md:flex-row md:items-center justify-between gap-10 border-b border-zinc-900 pb-10">
+            <motion.div key="metrics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-12 pb-20">
+               <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-zinc-900 pb-8">
                   <div>
-                    <h2 className="text-6xl font-black tracking-tighter uppercase leading-none">DADOS DE <span className="text-brand">BASE.</span></h2>
-                    <p className="text-zinc-500 uppercase font-bold tracking-[0.4em] text-[10px] mt-4">Metas e Eficiência por Profissional</p>
+                    <h2 className="text-4xl font-black tracking-tighter uppercase leading-none font-display">DADOS DE <span className="text-brand">BASE.</span></h2>
+                    <p className="text-zinc-500 uppercase font-bold tracking-[0.4em] text-[8px] mt-2">Metas e Eficiência por Profissional</p>
                   </div>
-                  <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 border-l-4 border-l-yellow-400">
-                    <div className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest mb-1">Liderança de Satisfação</div>
-                    <div className="text-3xl font-black uppercase text-white leading-none">{pilotCards.find(p => p.satisfAvg === Math.max(...pilotCards.map(x => x.satisfAvg)))?.name || "---"}</div>
+                  <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 border-l-4 border-l-yellow-400">
+                    <div className="text-[8px] uppercase font-bold text-zinc-500 tracking-widest mb-1">Liderança de Satisfação</div>
+                    <div className="text-xl font-black uppercase text-white leading-none font-display">{pilotCards.find(p => p.satisfAvg === Math.max(...pilotCards.map(x => x.satisfAvg)))?.name || "---"}</div>
                   </div>
                </header>
 
@@ -500,7 +498,7 @@ export default function App() {
                          <div className="flex gap-4">
                             <div className="w-14 h-14 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-center font-black text-2xl text-brand">{idx + 1}</div>
                             <div>
-                               <div className="text-2xl font-black uppercase tracking-tight">{pilot.name}</div>
+                               <div className="text-xl font-black uppercase tracking-tight font-display">{pilot.name}</div>
                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{units.find(u => u.id === pilot.unitId)?.name}</div>
                             </div>
                          </div>
@@ -541,7 +539,7 @@ export default function App() {
                     <div className="flex items-center gap-6">
                       <div className="w-16 h-16 bg-brand/5 rounded-2xl flex items-center justify-center border border-brand/20 text-brand"><ShieldAlert size={32} /></div>
                       <div>
-                        <h3 className="text-3xl font-black tracking-tight uppercase leading-none">CENTRO DE <span className="text-brand">AJUSTES.</span></h3>
+                         <h3 className="text-2xl font-black tracking-tight uppercase leading-none font-display">CENTRO DE <span className="text-brand">AJUSTES.</span></h3>
                         <p className="text-zinc-500 font-bold uppercase tracking-[0.4em] text-[10px] mt-3">Acompanhamento de Satisfação Pendente</p>
                       </div>
                     </div>
@@ -601,7 +599,7 @@ export default function App() {
             <motion.div key="feed" initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="max-w-4xl mx-auto space-y-12 pb-32">
               <header className="text-center">
                 <span className="text-brand font-black uppercase tracking-[0.5em] text-xs">Novo Atendimento</span>
-                <h2 className="text-6xl font-black tracking-tighter uppercase mt-4">PRONTUÁRIO DE <span className="text-brand">SERVIÇO.</span></h2>
+                <h2 className="text-4xl font-black tracking-tighter uppercase mt-2 font-display">PRONTUÁRIO DE <span className="text-brand">SERVIÇO.</span></h2>
               </header>
               <form onSubmit={handleSubmitEval} className="space-y-8">
                 <div className="space-y-8 bg-zinc-900/40 p-12 rounded-3xl border border-zinc-900 shadow-2xl backdrop-blur-sm">
@@ -669,7 +667,7 @@ export default function App() {
             <motion.div key="team" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="space-y-20 pb-32">
                <header className="flex items-center gap-8 border-b border-zinc-900 pb-12">
                  <div className="w-16 h-16 bg-zinc-900 rounded-3xl flex items-center justify-center shadow-xl border border-zinc-800 text-brand"><Users size={32} /></div>
-                 <h1 className="text-6xl font-black tracking-tighter uppercase leading-none">EQUIPE & <span className="text-brand">BASE.</span></h1>
+                  <h1 className="text-4xl font-black tracking-tighter uppercase leading-none font-display">EQUIPE & <span className="text-brand">BASE.</span></h1>
                </header>
                <div className="grid grid-cols-1 xl:grid-cols-2 gap-20">
                   <div className="space-y-12">
