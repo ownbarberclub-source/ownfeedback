@@ -227,18 +227,32 @@ export default function App() {
     if (!newUnitName.trim()) return;
     const newId = crypto.randomUUID();
     const newU = { id: newId, name: newUnitName.toUpperCase() };
-    setUnits([...units, newU]);
-    await supabase.from('previa_units').insert([newU]);
-    setNewUnitName('');
+    
+    try {
+      const { error } = await supabase.from('previa_units').insert([newU]);
+      if (error) throw error;
+      setUnits([...units, newU]);
+      setNewUnitName('');
+    } catch (err) {
+      console.error("Erro ao adicionar unidade:", err);
+      alert("Falha ao salvar unidade no banco de dados.");
+    }
   };
 
   const handleAddBarber = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBarber.name || !newBarber.unitId) return;
     const newB = { id: crypto.randomUUID(), name: newBarber.name.toUpperCase(), unitId: newBarber.unitId };
-    setBarbers([...barbers, newB]);
-    await supabase.from('previa_barbers').insert([{ id: newB.id, name: newB.name, unit_id: newB.unitId }]);
-    setNewBarber({ name: '', unitId: '' });
+    
+    try {
+      const { error } = await supabase.from('previa_barbers').insert([{ id: newB.id, name: newB.name, unit_id: newB.unitId }]);
+      if (error) throw error;
+      setBarbers([...barbers, newB]);
+      setNewBarber({ name: '', unitId: '' });
+    } catch (err) {
+      console.error("Erro ao adicionar barbeiro:", err);
+      alert("Falha ao salvar barbeiro no banco de dados.");
+    }
   };
 
   const handleDeleteEval = async (id: string) => {
