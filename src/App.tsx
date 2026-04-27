@@ -105,7 +105,7 @@ export default function App() {
     }
 
     // Carrega barbeiros do Supabase
-    const { data: dbBarbers, error: barbersError } = await supabase.from('previa_barbers').select('*').order('name');
+    const { data: dbBarbers, error: barbersError } = await supabase.from('previa_barbers').select('*').eq('is_hidden_crm', false).order('name');
     if (barbersError) console.error('Erro ao carregar barbeiros:', barbersError);
     if (dbBarbers) {
       setBarbers(dbBarbers.map(b => ({ id: b.id, name: b.name, unitId: b.unit_id })));
