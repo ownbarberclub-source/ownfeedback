@@ -97,6 +97,32 @@ export default function App() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const mapEvaluation = (e: any): Evaluation => ({
+    id: e.id,
+    clientName: e.client_name || '',
+    unitId: e.unit_id || '',
+    barberId: e.barber_id || '',
+    serviceDate: e.service_date || '',
+    serviceTime: e.service_time || '',
+    clientArrivalStatus: e.client_arrival_status || 'SIM',
+    serviceStartStatus: e.service_start_status || 'SIM',
+    complaintStatus: e.complaint_status || 'NÃO',
+    leftFeedback: !!e.left_feedback,
+    feedbackDescription: e.feedback_description || '',
+    isSubscriber: !!e.is_subscriber,
+    offeredSubscription: !!e.offered_subscription,
+    subscriptionInterest: e.subscription_interest || 'NENHUM',
+    needsFollowUp: !!e.needs_follow_up,
+    generalNotes: e.general_notes || '',
+    satisfactionLevel: e.satisfaction_level || 5,
+    problemDescription: e.problem_description || '',
+    wouldRecommend: (e.satisfaction_level || 5) >= 4,
+    hadReturnRequest: !!e.needs_follow_up,
+    rating: e.satisfaction_level || 5,
+    date: e.created_at,
+    season: e.created_at ? new Date(e.created_at).getFullYear().toString() : new Date().getFullYear().toString(),
+  });
+
   const loadData = async () => {
     // Carrega unidades do Supabase
     const { data: dbUnits } = await supabase.from('previa_units').select('*').order('name');
@@ -117,31 +143,7 @@ export default function App() {
       console.error('Erro ao carregar avaliações:', evalsError);
     }
     if (dbEvals) {
-      setEvaluations(dbEvals.map(e => ({
-        id: e.id,
-        clientName: e.client_name || '',
-        unitId: e.unit_id || '',
-        barberId: e.barber_id || '',
-        serviceDate: e.service_date || '',
-        serviceTime: e.service_time || '',
-        clientArrivalStatus: e.client_arrival_status || 'SIM',
-        serviceStartStatus: e.service_start_status || 'SIM',
-        complaintStatus: e.complaint_status || 'NÃO',
-        leftFeedback: !!e.left_feedback,
-        feedbackDescription: e.feedback_description || '',
-        isSubscriber: !!e.is_subscriber,
-        offeredSubscription: !!e.offered_subscription,
-        subscriptionInterest: e.subscription_interest || 'NENHUM',
-        needsFollowUp: !!e.needs_follow_up,
-        generalNotes: e.general_notes || '',
-        satisfactionLevel: e.satisfaction_level || 5,
-        problemDescription: e.problem_description || '',
-        wouldRecommend: (e.satisfaction_level || 5) >= 4,
-        hadReturnRequest: !!e.needs_follow_up,
-        rating: e.satisfaction_level || 5,
-        date: e.created_at,
-        season: e.created_at ? new Date(e.created_at).getFullYear().toString() : new Date().getFullYear().toString(),
-      })));
+      setEvaluations(dbEvals.map(mapEvaluation));
     }
   };
 
@@ -152,14 +154,52 @@ export default function App() {
   // --- Realtime Data Synchronization ---
   useEffect(() => {
     const channel = supabase.channel('realtime-feedback-sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_evaluations' }, () => {
-        loadData();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback_evaluations' }, (payload) => {
+        setEvaluations(prev => {
+          if (payload.eventType === 'INSERT') {
+            const mapped = mapEvaluation(payload.new);
+            if (prev.some(e => e.id === mapped.id)) return prev;
+            return [mapped, ...prev];
+          }
+          if (payload.eventType === 'UPDATE') {
+            const mapped = mapEvaluation(payload.new);
+            return prev.map(e => e.id === mapped.id ? mapped : e);
+          }
+          if (payload.eventType === 'DELETE') {
+            return prev.filter(e => e.id !== payload.old.id);
+          }
+          return prev;
+        });
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'previa_units' }, () => {
-        loadData();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'previa_units' }, (payload) => {
+        setUnits(prev => {
+          if (payload.eventType === 'INSERT') {
+            if (prev.some(u => u.id === payload.new.id)) return prev;
+            return [...prev, { id: payload.new.id, name: payload.new.name }].sort((a, b) => a.name.localeCompare(b.name));
+          }
+          if (payload.eventType === 'UPDATE') {
+            return prev.map(u => u.id === payload.new.id ? { id: payload.new.id, name: payload.new.name } : u).sort((a, b) => a.name.localeCompare(b.name));
+          }
+          if (payload.eventType === 'DELETE') {
+            return prev.filter(u => u.id !== payload.old.id);
+          }
+          return prev;
+        });
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'previa_barbers' }, () => {
-        loadData();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'previa_barbers' }, (payload) => {
+        setBarbers(prev => {
+          if (payload.eventType === 'INSERT') {
+            if (prev.some(b => b.id === payload.new.id)) return prev;
+            return [...prev, { id: payload.new.id, name: payload.new.name, unitId: payload.new.unit_id }].sort((a, b) => a.name.localeCompare(b.name));
+          }
+          if (payload.eventType === 'UPDATE') {
+            return prev.map(b => b.id === payload.new.id ? { id: payload.new.id, name: payload.new.name, unitId: payload.new.unit_id } : b).sort((a, b) => a.name.localeCompare(b.name));
+          }
+          if (payload.eventType === 'DELETE') {
+            return prev.filter(b => b.id !== payload.old.id);
+          }
+          return prev;
+        });
       })
       .subscribe();
 
