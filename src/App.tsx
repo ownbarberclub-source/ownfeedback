@@ -77,6 +77,7 @@ export default function App() {
   
   // -- Filter State --
   const [selectedUnitFilter, setSelectedUnitFilter] = useState<string>('all');
+  const [selectedBarberFilter, setSelectedBarberFilter] = useState<string>('all');
   
   // -- Period State --
   const [viewMode, setViewMode] = useState<'mensal' | 'anual'>('mensal');
@@ -850,6 +851,50 @@ export default function App() {
                  <button onClick={() => setActiveTab('feedback')} className="bg-brand/10 text-brand border border-brand/20 px-8 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-brand hover:text-white transition-all flex items-center gap-3"><ClipboardList size={16}/> Novo Registro</button>
               </header>
 
+              {/* Filtros */}
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-3 bg-zinc-900/60 border border-zinc-800 rounded-xl px-5 py-3">
+                  <Scissors size={14} className="text-brand shrink-0" />
+                  <select
+                    className="bg-transparent text-white font-bold uppercase text-[11px] outline-none cursor-pointer"
+                    value={selectedBarberFilter}
+                    onChange={e => setSelectedBarberFilter(e.target.value)}
+                  >
+                    <option value="all" className="bg-zinc-950">Todos os Barbeiros</option>
+                    {barbers.map(b => (
+                      <option key={b.id} value={b.id} className="bg-zinc-950">{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-3 bg-zinc-900/60 border border-zinc-800 rounded-xl px-5 py-3">
+                  <MapPin size={14} className="text-brand shrink-0" />
+                  <select
+                    className="bg-transparent text-white font-bold uppercase text-[11px] outline-none cursor-pointer"
+                    value={selectedUnitFilter}
+                    onChange={e => setSelectedUnitFilter(e.target.value)}
+                  >
+                    <option value="all" className="bg-zinc-950">Todas as Unidades</option>
+                    {units.map(u => (
+                      <option key={u.id} value={u.id} className="bg-zinc-950">{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {(selectedBarberFilter !== 'all' || selectedUnitFilter !== 'all') && (
+                  <button
+                    onClick={() => { setSelectedBarberFilter('all'); setSelectedUnitFilter('all'); }}
+                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors px-4 py-3"
+                  >
+                    ✕ Limpar Filtros
+                  </button>
+                )}
+                <div className="ml-auto text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+                  {evaluations.filter(e =>
+                    (selectedBarberFilter === 'all' || e.barberId === selectedBarberFilter) &&
+                    (selectedUnitFilter === 'all' || e.unitId === selectedUnitFilter)
+                  ).length} registro(s)
+                </div>
+              </div>
+
               <div className="bg-zinc-900/40 rounded-3xl border border-zinc-900 overflow-hidden backdrop-blur-sm">
                 <div className="overflow-x-auto no-scrollbar">
                   <table className="w-full text-left border-collapse">
@@ -864,7 +909,12 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-900/50">
-                      {evaluations.map(e => (
+                      {evaluations
+                        .filter(e =>
+                          (selectedBarberFilter === 'all' || e.barberId === selectedBarberFilter) &&
+                          (selectedUnitFilter === 'all' || e.unitId === selectedUnitFilter)
+                        )
+                        .map(e => (
                         <tr key={e.id} className="hover:bg-white/[0.02] transition-colors group">
                           <td className="p-6">
                             <div className="text-xs font-bold text-white">{new Date(e.serviceDate || e.date).toLocaleDateString('pt-BR')}</div>
@@ -892,8 +942,8 @@ export default function App() {
                           </td>
                           <td className="p-6 text-right">
                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                               <button onClick={() => handleOpenEditModal(e)} title="Ver detalhes e observações" className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white hover:border-zinc-600 transition-all"><MessageSquare size={14} /></button>
-                               <button onClick={() => handleEditEval(e)} title="Editar avaliação completa" className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white hover:border-zinc-600 transition-all"><Edit2 size={14} /></button>
+                               <button onClick={() => handleOpenEditModal(e)} title="Ver detalhes" className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white hover:border-zinc-600 transition-all"><MessageSquare size={14} /></button>
+                               <button onClick={() => handleEditEval(e)} title="Editar avaliação" className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white hover:border-zinc-600 transition-all"><Edit2 size={14} /></button>
                                <button onClick={() => handleDeleteEval(e.id)} className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-brand hover:border-brand/40 transition-all"><Trash2 size={14} /></button>
                              </div>
                           </td>
@@ -996,36 +1046,31 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Observações — editável */}
+                  {/* Observações — somente leitura */}
                   <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white">
                       <MessageSquare size={14} className="text-brand" />
                       Observações do Atendimento
-                    </label>
-                    <textarea
-                      className="input-field w-full resize-none text-sm leading-relaxed"
-                      rows={5}
-                      placeholder="Nenhuma observação registrada. Adicione agora..."
-                      value={editModalNotes}
-                      onChange={e => setEditModalNotes(e.target.value)}
-                    />
-                    <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">Alterações são salvas diretamente no banco de dados</p>
+                    </div>
+                    {editModalEval.generalNotes ? (
+                      <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5 text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                        {editModalEval.generalNotes}
+                      </div>
+                    ) : (
+                      <div className="bg-zinc-900/30 border border-dashed border-zinc-800 rounded-xl p-6 text-center">
+                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Nenhuma observação registrada</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Modal Footer */}
-                <div className="p-8 border-t border-zinc-900 flex gap-4">
+                {/* Modal Footer — apenas fechar */}
+                <div className="p-8 border-t border-zinc-900">
                   <button
-                    onClick={() => { handleEditEval(editModalEval); setEditModalEval(null); }}
-                    className="flex-1 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-black text-xs uppercase tracking-widest text-zinc-400 hover:text-white hover:border-zinc-700 transition-all flex items-center justify-center gap-2"
+                    onClick={() => setEditModalEval(null)}
+                    className="w-full py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-black text-xs uppercase tracking-widest text-zinc-400 hover:text-white hover:border-zinc-700 transition-all"
                   >
-                    <Edit2 size={14} /> Editar Completo
-                  </button>
-                  <button
-                    onClick={handleSaveModalNotes}
-                    className="flex-1 py-4 bg-brand border border-brand rounded-xl font-black text-xs uppercase tracking-widest text-white hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand/20"
-                  >
-                    <Save size={14} /> Salvar Observações
+                    Fechar
                   </button>
                 </div>
               </motion.div>
