@@ -244,9 +244,9 @@ export default function App() {
 
         const xp = Math.min(1000, Math.round(
           (satisfAvg * 100) + 
-          (recRate * 2) + 
-          (offerRate * 2) + 
-          (punctRate) - 
+          (recRate * 1) + 
+          (offerRate * 1) + 
+          (punctRate * 3) - 
           (correctionCount * 60)
         ));
 
