@@ -97,6 +97,10 @@ export default function App() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // -- Edit Modal State --
+  const [editModalEval, setEditModalEval] = useState<Evaluation | null>(null);
+  const [editModalNotes, setEditModalNotes] = useState('');
+
   const mapEvaluation = (e: any): Evaluation => ({
     id: e.id,
     clientName: e.client_name || '',
@@ -308,6 +312,25 @@ export default function App() {
   const handleEditEval = (evaluation: Evaluation) => {
     setNewEval(evaluation);
     setActiveTab('feedback');
+  };
+
+  const handleOpenEditModal = (evaluation: Evaluation) => {
+    setEditModalEval(evaluation);
+    setEditModalNotes(evaluation.generalNotes || '');
+  };
+
+  const handleSaveModalNotes = async () => {
+    if (!editModalEval) return;
+    const { error } = await supabase
+      .from('feedback_evaluations')
+      .update({ general_notes: editModalNotes })
+      .eq('id', editModalEval.id);
+    if (error) {
+      alert('Erro ao salvar observações: ' + error.message);
+      return;
+    }
+    setEvaluations(prev => prev.map(e => e.id === editModalEval.id ? { ...e, generalNotes: editModalNotes } : e));
+    setEditModalEval(null);
   };
 
   const handleSubmitEval = async (e: React.FormEvent) => {
@@ -740,6 +763,20 @@ export default function App() {
                      <div className="space-y-4"><label className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest text-center block">Ofertada Assinatura?</label><div className="flex gap-4"><button type="button" onClick={() => setNewEval({...newEval, offeredSubscription: true})} className={`flex-1 py-4 rounded-xl border font-black text-xs transition-all ${newEval.offeredSubscription === true ? 'bg-brand border-brand text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-700'}`}>SIM</button><button type="button" onClick={() => setNewEval({...newEval, offeredSubscription: false})} className={`flex-1 py-4 rounded-xl border font-black text-xs transition-all ${newEval.offeredSubscription === false ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-700'}`}>NÃO</button></div></div>
                      <div className="space-y-4"><label className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest text-center block">Interesse na Assinatura</label><div className="grid grid-cols-2 gap-2">{['ALTO', 'MÉDIO', 'BAIXO', 'NENHUM'].map(s => (<button key={s} type="button" onClick={() => setNewEval({...newEval, subscriptionInterest: s as any})} className={`py-4 rounded-xl border font-bold text-[9px] uppercase transition-all ${newEval.subscriptionInterest === s ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-700 hover:text-zinc-500'}`}>{s}</button>))}</div></div>
                   </div>
+
+                  {/* 04 — Observações */}
+                  <div className="flex items-center gap-4 text-brand font-black uppercase tracking-widest text-[11px] border-b border-zinc-800 pb-6 pt-10"><MessageSquare size={20}/> 04 — Observações do Atendimento</div>
+                  <div className="space-y-4">
+                    <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Observações Gerais</label>
+                    <textarea
+                      className="input-field w-full resize-none text-sm leading-relaxed"
+                      rows={5}
+                      placeholder="Adicione observações relevantes sobre o atendimento, comportamento do cliente, detalhes do serviço, ocorrências especiais..."
+                      value={newEval.generalNotes || ''}
+                      onChange={e => setNewEval({...newEval, generalNotes: e.target.value})}
+                    />
+                    <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">Campo livre — visível somente na edição da avaliação</p>
+                  </div>
                 </div>
                 <div className="pt-8"><button type="submit" className="btn-primary w-full py-12 text-2xl uppercase tracking-widest flex items-center justify-center gap-6 group"><Save size={32} className="group-hover:scale-110 transition-transform" /> Gravar Registro Telemetria</button></div>
               </form>
@@ -855,7 +892,8 @@ export default function App() {
                           </td>
                           <td className="p-6 text-right">
                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                               <button onClick={() => handleEditEval(e)} className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white hover:border-zinc-600 transition-all"><Edit2 size={14} /></button>
+                               <button onClick={() => handleOpenEditModal(e)} title="Ver detalhes e observações" className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white hover:border-zinc-600 transition-all"><MessageSquare size={14} /></button>
+                               <button onClick={() => handleEditEval(e)} title="Editar avaliação completa" className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white hover:border-zinc-600 transition-all"><Edit2 size={14} /></button>
                                <button onClick={() => handleDeleteEval(e.id)} className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-brand hover:border-brand/40 transition-all"><Trash2 size={14} /></button>
                              </div>
                           </td>
@@ -875,6 +913,125 @@ export default function App() {
             🏁 REGISTRO ARQUIVADO!
           </motion.div>
         )}
+
+        {/* EDIT MODAL — Detalhes e Observações */}
+        <AnimatePresence>
+          {editModalEval && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center p-6"
+              style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
+              onClick={e => { if (e.target === e.currentTarget) setEditModalEval(null); }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-8 border-b border-zinc-900">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-brand/10 rounded-xl flex items-center justify-center border border-brand/20">
+                      <MessageSquare size={20} className="text-brand" />
+                    </div>
+                    <div>
+                      <div className="text-xl font-black uppercase tracking-tight">{editModalEval.clientName}</div>
+                      <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
+                        {new Date(editModalEval.serviceDate || editModalEval.date).toLocaleDateString('pt-BR')} · {editModalEval.serviceTime || '--:--'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setEditModalEval(null)}
+                    className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white hover:border-zinc-600 transition-all font-black text-lg"
+                  >✕</button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-8 space-y-8">
+                  {/* Info Rápida */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { label: 'Profissional', value: barbers.find(b => b.id === editModalEval.barberId)?.name || '---' },
+                      { label: 'Unidade', value: units.find(u => u.id === editModalEval.unitId)?.name || '---' },
+                      { label: 'Pontualidade Cliente', value: editModalEval.clientArrivalStatus },
+                      { label: 'Início do Serviço', value: editModalEval.serviceStartStatus },
+                    ].map(item => (
+                      <div key={item.label} className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800">
+                        <div className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-1">{item.label}</div>
+                        <div className="text-sm font-black uppercase text-white">{item.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Satisfação */}
+                  <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800">
+                    <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Nível de Satisfação</div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-4xl font-black text-brand">{editModalEval.satisfactionLevel}</div>
+                      <div className="flex gap-1.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} size={18} className={i < editModalEval.satisfactionLevel ? 'text-yellow-400' : 'text-zinc-800'} fill={i < editModalEval.satisfactionLevel ? 'currentColor' : 'none'} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Flags */}
+                  <div className="flex flex-wrap gap-2">
+                    {editModalEval.needsFollowUp && <span className="bg-brand/10 text-brand border border-brand/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest">⚠ Pedido de Ajuste</span>}
+                    {editModalEval.isSubscriber && <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest">★ Assinante</span>}
+                    {editModalEval.offeredSubscription && <span className="bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest">✓ Assinatura Ofertada</span>}
+                    {editModalEval.wouldRecommend && <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest">👍 Recomendaria</span>}
+                  </div>
+
+                  {/* Problema */}
+                  {editModalEval.problemDescription && (
+                    <div className="p-5 bg-red-900/10 border border-brand/20 rounded-xl">
+                      <div className="text-[9px] font-bold text-brand uppercase tracking-widest mb-2 flex items-center gap-2"><AlertCircle size={12}/> Relato do Problema</div>
+                      <p className="text-sm text-zinc-300 italic leading-relaxed">"{editModalEval.problemDescription}"</p>
+                    </div>
+                  )}
+
+                  {/* Observações — editável */}
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white">
+                      <MessageSquare size={14} className="text-brand" />
+                      Observações do Atendimento
+                    </label>
+                    <textarea
+                      className="input-field w-full resize-none text-sm leading-relaxed"
+                      rows={5}
+                      placeholder="Nenhuma observação registrada. Adicione agora..."
+                      value={editModalNotes}
+                      onChange={e => setEditModalNotes(e.target.value)}
+                    />
+                    <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">Alterações são salvas diretamente no banco de dados</p>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-8 border-t border-zinc-900 flex gap-4">
+                  <button
+                    onClick={() => { handleEditEval(editModalEval); setEditModalEval(null); }}
+                    className="flex-1 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-black text-xs uppercase tracking-widest text-zinc-400 hover:text-white hover:border-zinc-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Edit2 size={14} /> Editar Completo
+                  </button>
+                  <button
+                    onClick={handleSaveModalNotes}
+                    className="flex-1 py-4 bg-brand border border-brand rounded-xl font-black text-xs uppercase tracking-widest text-white hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand/20"
+                  >
+                    <Save size={14} /> Salvar Observações
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
