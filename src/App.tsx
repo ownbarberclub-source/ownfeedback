@@ -242,20 +242,10 @@ export default function App() {
         if (offerRate >= 80 && total >= 5) medals.push({ id: 'sales', icon: Zap, label: 'Especialista de Vendas', color: 'text-brand' });
         if (recRate === 100 && total >= 5) medals.push({ id: 'fav', icon: Heart, label: 'Nota Máxima', color: 'text-pink-400' });
 
-        let xp = 0;
-        bEvals.forEach(e => {
-          if (e.satisfactionLevel === 5) xp += 50;
-          else if (e.satisfactionLevel === 4) xp += 30;
-          else if (e.satisfactionLevel === 3) xp += 10;
-          
-          if (e.serviceStartStatus === 'SIM' || e.serviceStartStatus === 'ADIANTADO') xp += 20;
-          else if (e.serviceStartStatus === 'COM ATRASO') xp -= 10;
-          
-          if (e.wouldRecommend) xp += 15;
-          if (e.offeredSubscription) xp += 15;
-          if (e.hadReturnRequest) xp -= 50;
-        });
-        xp = Math.max(0, xp);
+        const baseQuality = (satisfAvg * 100) + (recRate * 1) + (offerRate * 1) + (punctRate * 3);
+        const volumeBonus = total * 1; // 1 ponto extra por avaliação (apenas para desempate)
+        const penalty = correctionCount * 50;
+        const xp = Math.max(0, Math.round(baseQuality + volumeBonus - penalty));
 
         return { ...barber, total, satisfAvg, recRate, offerRate, punctRate, correctionCount, medals, xp };
       }).sort((a, b) => b.xp - a.xp);
