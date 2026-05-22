@@ -491,10 +491,10 @@ export default function App() {
               <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-zinc-900 pb-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="bg-brand/10 text-brand font-bold px-3 py-1 rounded-md text-[9px] uppercase tracking-wider border border-brand/20">Performance</span>
+                    <span className="bg-brand/10 text-brand font-bold px-3 py-1 rounded-md text-[9px] uppercase tracking-wider border border-brand/20">Desempenho</span>
                     <span className="text-zinc-500 font-bold text-[9px] uppercase tracking-[0.3em]">{viewMode === 'mensal' ? `${MONTHS[selectedMonth]} ${selectedYear}` : `ANUAL ${selectedYear}`}</span>
                   </div>
-                  <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none font-display">THE <span className="text-brand">RANK.</span></h1>
+                  <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none font-display">CLASSIFICAÇÃO <span className="text-brand">GERAL.</span></h1>
                 </div>
                 <div className="flex items-center gap-4 hidden">
                   {/* Seletor migrado para o Top Header */}
@@ -513,7 +513,7 @@ export default function App() {
                     <motion.div key={pilot.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }}
                       className={`flex items-center gap-5 p-5 card transition-all border-l-4 ${index < 3 ? 'border-brand' : 'border-zinc-900 hover:bg-zinc-900/50 hover:border-zinc-800'}`}>
                       <div className="w-12 md:w-16 flex flex-col items-center justify-center shrink-0">
-                        <span className={`text-3xl md:text-4xl font-black tracking-tighter leading-none font-display ${index === 0 ? 'text-brand' : index < 3 ? 'text-white' : 'text-zinc-800'}`}>P{index + 1}</span>
+                        <span className={`text-3xl md:text-4xl font-black tracking-tighter leading-none font-display ${index === 0 ? 'text-brand' : index < 3 ? 'text-white' : 'text-zinc-800'}`}>{index + 1}º</span>
                       </div>
                       
                       <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden">
@@ -539,9 +539,15 @@ export default function App() {
                             </div>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-3xl font-black tracking-tighter leading-none text-glow font-display">{pilot.satisfAvg.toFixed(2)}</div>
-                          <div className="text-[7px] font-bold uppercase tracking-widest text-zinc-600 mt-0.5">Média</div>
+                        <div className="text-right shrink-0 flex items-center gap-6">
+                          <div className="text-right">
+                             <div className="text-xl font-black leading-none text-zinc-300">{pilot.total}</div>
+                             <div className="text-[7px] font-bold uppercase tracking-widest text-zinc-600 mt-0.5">Avaliações</div>
+                          </div>
+                          <div className="text-right">
+                             <div className="text-3xl font-black tracking-tighter leading-none text-glow font-display">{pilot.satisfAvg.toFixed(2)}</div>
+                             <div className="text-[7px] font-bold uppercase tracking-widest text-zinc-600 mt-0.5">Média</div>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -599,7 +605,7 @@ export default function App() {
             <motion.div key="metrics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-12 pb-20">
                <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-zinc-900 pb-8">
                   <div>
-                    <h2 className="text-4xl font-black tracking-tighter uppercase leading-none font-display">DADOS DE <span className="text-brand">BASE.</span></h2>
+                    <h2 className="text-4xl font-black tracking-tighter uppercase leading-none font-display">MÉTRICAS <span className="text-brand">BASE.</span></h2>
                     <p className="text-zinc-500 uppercase font-bold tracking-[0.4em] text-[8px] mt-2">Metas e Eficiência por Profissional</p>
                   </div>
                   <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 border-l-4 border-l-yellow-400">
@@ -624,7 +630,7 @@ export default function App() {
                          </div>
                          <div className="text-right">
                             <div className="text-4xl font-black text-brand leading-none text-glow">{pilot.xp}</div>
-                            <div className="text-[8px] font-bold uppercase tracking-tighter text-zinc-600">PROFESSIONAL XP</div>
+                            <div className="text-[8px] font-bold uppercase tracking-tighter text-zinc-600">PONTUAÇÃO (XP)</div>
                          </div>
                       </div>
 
