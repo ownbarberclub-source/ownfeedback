@@ -242,13 +242,20 @@ export default function App() {
         if (offerRate >= 80 && total >= 5) medals.push({ id: 'sales', icon: Zap, label: 'Especialista de Vendas', color: 'text-brand' });
         if (recRate === 100 && total >= 5) medals.push({ id: 'fav', icon: Heart, label: 'Nota Máxima', color: 'text-pink-400' });
 
-        const xp = Math.min(1000, Math.round(
-          (satisfAvg * 100) + 
-          (recRate * 1) + 
-          (offerRate * 1) + 
-          (punctRate * 3) - 
-          (correctionCount * 60)
-        ));
+        let xp = 0;
+        bEvals.forEach(e => {
+          if (e.satisfactionLevel === 5) xp += 50;
+          else if (e.satisfactionLevel === 4) xp += 30;
+          else if (e.satisfactionLevel === 3) xp += 10;
+          
+          if (e.serviceStartStatus === 'SIM' || e.serviceStartStatus === 'ADIANTADO') xp += 20;
+          else if (e.serviceStartStatus === 'COM ATRASO') xp -= 10;
+          
+          if (e.wouldRecommend) xp += 15;
+          if (e.offeredSubscription) xp += 15;
+          if (e.hadReturnRequest) xp -= 50;
+        });
+        xp = Math.max(0, xp);
 
         return { ...barber, total, satisfAvg, recRate, offerRate, punctRate, correctionCount, medals, xp };
       }).sort((a, b) => b.xp - a.xp);
@@ -393,53 +400,67 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-black relative overflow-hidden text-zinc-100 font-sans antialiased bg-mesh">
+    <div className="min-h-screen flex flex-col bg-[#09090b] text-zinc-100 font-sans antialiased bg-mesh">
       
-      {/* Sidebar */}
-      <aside className="w-full md:w-72 bg-[#09090b] border-r border-zinc-900 flex flex-col z-50 relative shrink-0">
-        <div className="p-8 text-center">
-          <div className="w-16 h-16 bg-white/5 rounded-xl p-3 mx-auto flex items-center justify-center border border-zinc-800 shadow-xl group hover:border-brand/40 transition-colors">
-            <img src={LogoLocal} alt="Own Barber Club" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} onError={(e) => { e.currentTarget.src = "https://ownbarberclublp.vercel.app/assets/logo.png" }} />
-          </div>
-          <div className="mt-4">
-            <div className="text-xl font-black tracking-tighter uppercase font-display">OWN <span className="text-brand">FEEDBACK</span></div>
-            <div className="text-[8px] uppercase tracking-[0.3em] font-bold text-zinc-600 mt-1">Professional Intelligence</div>
-          </div>
-        </div>
-
-        <nav className="flex-1 px-4 space-y-1 mt-2">
-          {[
-            { id: 'dashboard', icon: LayoutGrid, label: 'Ranking' },
-            { id: 'feedback', icon: ClipboardList, label: 'Novo Registro' },
-            { id: 'metrics', icon: TrendingUp, label: 'Performance' },
-            { id: 'records', icon: Database, label: 'Avaliações' },
-            { id: 'team', icon: Users, label: 'Unidades & Time' },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id as Tab)}
-              className={`nav-item ${activeTab === item.id ? 'nav-item-active' : 'nav-item-inactive'} !py-3 !px-5`}
-            >
-              <item.icon size={18} className={activeTab === item.id ? 'text-brand' : ''} />
-              <span className="font-bold text-xs tracking-tight">{item.label}</span>
-              {activeTab === item.id && <div className="ml-auto w-1 h-1 bg-brand rounded-full shadow-[0_0_8px_rgba(220,38,38,0.8)]" />}
-            </button>
-          ))}
-        </nav>
-
-        <div className="p-8 border-t border-zinc-900">
-           <div className="bg-zinc-900/50 rounded-xl p-5 border border-zinc-800 text-center">
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Status do Sistema</div>
-              <div className="flex items-center justify-center gap-2">
-                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                 <span className="text-xs font-bold">OPERACIONAL</span>
+      {/* Top Header */}
+      <header className="bg-[#18181b] border-b border-zinc-900 sticky top-0 z-50">
+        <div className="max-w-[1200px] mx-auto px-6 h-auto min-h-[5rem] flex flex-wrap items-center justify-between gap-4 py-3">
+          
+          <div className="flex items-center gap-6 flex-wrap">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#09090b] rounded-xl flex items-center justify-center border border-zinc-800 p-1">
+                <img src={LogoLocal} alt="Own Barber Club" className="w-full h-full object-contain filter brightness-0 invert" onError={(e) => { e.currentTarget.src = "https://ownbarberclublp.vercel.app/assets/logo.png" }} />
               </div>
-           </div>
+              <span className="font-black text-lg tracking-tighter uppercase font-display italic text-zinc-100">
+                OWN <span className="text-brand">FEEDBACK</span>
+              </span>
+            </div>
+
+            {/* Global Unit Selector */}
+            <div className="flex items-center gap-2 bg-[#09090b] px-3 py-1.5 rounded-xl border border-zinc-800 transition-all focus-within:border-brand/50">
+              <MapPin size={14} className="text-zinc-500" />
+              <select 
+                className="bg-transparent text-white font-bold uppercase text-[11px] outline-none cursor-pointer hover:text-brand transition-colors pr-2"
+                value={selectedUnitFilter}
+                onChange={(e) => setSelectedUnitFilter(e.target.value)}
+              >
+                <option value="all" className="bg-[#18181b]">TODAS AS UNIDADES</option>
+                {units.map(u => (
+                  <option key={u.id} value={u.id} className="bg-[#18181b]">{u.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            {[
+              { id: 'dashboard', icon: LayoutGrid, label: 'Ranking' },
+              { id: 'feedback', icon: ClipboardList, label: 'Novo Registro' },
+              { id: 'metrics', icon: TrendingUp, label: 'Performance' },
+              { id: 'records', icon: Database, label: 'Avaliações' },
+              { id: 'team', icon: Users, label: 'Unidades & Time' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id as Tab)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-bold text-[11px] tracking-tight uppercase whitespace-nowrap ${
+                  activeTab === item.id 
+                    ? 'bg-zinc-900 text-brand' 
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'
+                }`}
+              >
+                <item.icon size={15} />
+                {item.label}
+              </button>
+            ))}
+          </nav>
         </div>
-      </aside>
+      </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-10 lg:p-12 overflow-y-auto relative no-scrollbar">
+      <main className="max-w-[1200px] w-full mx-auto p-6 md:p-10 overflow-y-auto relative no-scrollbar flex-1">
         
         {/* Header Seletor Estilo Moderno */}
         <div className="sticky top-0 z-40 mb-12 flex flex-wrap items-center justify-between gap-8 bg-black/60 backdrop-blur-xl p-6 md:p-8 rounded-2xl border border-zinc-900 shadow-2xl">
@@ -475,18 +496,8 @@ export default function App() {
                   </div>
                   <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none font-display">THE <span className="text-brand">RANK.</span></h1>
                 </div>
-                <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-xl border border-zinc-800">
-                  <MapPin size={14} className="ml-3 text-zinc-500" />
-                  <select 
-                    className="bg-transparent text-white font-bold uppercase text-[10px] outline-none cursor-pointer hover:text-brand transition-colors py-1.5 pr-3"
-                    value={selectedUnitFilter}
-                    onChange={(e) => setSelectedUnitFilter(e.target.value)}
-                  >
-                    <option value="all" className="bg-zinc-950">TODAS AS UNIDADES</option>
-                    {units.map(u => (
-                      <option key={u.id} value={u.id} className="bg-zinc-950">{u.name}</option>
-                    ))}
-                  </select>
+                <div className="flex items-center gap-4 hidden">
+                  {/* Seletor migrado para o Top Header */}
                 </div>
               </header>
 
@@ -598,9 +609,11 @@ export default function App() {
                </header>
 
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {pilotCards.map((pilot, idx) => (
+                  {pilotCards.map((pilot, idx) => {
+                    const maxXP = Math.max(1, pilotCards[0]?.xp || 1);
+                    return (
                     <motion.div key={pilot.id} whileHover={{ y: -5 }} className="card p-10 group bg-zinc-900/40">
-                      <div className="absolute top-0 left-0 bottom-0 bg-brand/[0.03] transition-all duration-1000" style={{ width: `${(pilot.xp / 1000) * 100}%` }} />
+                      <div className="absolute top-0 left-0 bottom-0 bg-brand/[0.03] transition-all duration-1000" style={{ width: `${(pilot.xp / maxXP) * 100}%` }} />
                       <div className="flex items-start justify-between relative z-10 mb-8">
                          <div className="flex gap-4">
                             <div className="w-14 h-14 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-center font-black text-2xl text-brand">{idx + 1}</div>
@@ -637,7 +650,8 @@ export default function App() {
                          {pilot.correctionCount > 0 && <div className="flex items-center gap-2 bg-brand/10 px-3 py-2 rounded-lg border border-brand/20 text-[10px] font-bold text-brand uppercase tracking-wider"><ShieldAlert size={12} /> {pilot.correctionCount} AJUSTES</div>}
                       </div>
                     </motion.div>
-                  ))}
+                    );
+                  })}
                </div>
 
                {/* CENTRO DE RETORNOS */}
