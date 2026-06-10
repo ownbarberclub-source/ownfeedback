@@ -928,7 +928,7 @@ export default function App() {
                   </button>
                 )}
                 <div className="ml-auto text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-                  {evaluations.filter(e =>
+                  {filteredEvaluations.filter(e =>
                     (selectedBarberFilter === 'all' || e.barberId === selectedBarberFilter) &&
                     (selectedUnitFilter === 'all' || e.unitId === selectedUnitFilter)
                   ).length} registro(s)
@@ -949,7 +949,7 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-900/50">
-                      {evaluations
+                      {filteredEvaluations
                         .filter(e =>
                           (selectedBarberFilter === 'all' || e.barberId === selectedBarberFilter) &&
                           (selectedUnitFilter === 'all' || e.unitId === selectedUnitFilter)
