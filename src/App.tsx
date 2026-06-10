@@ -59,6 +59,36 @@ const MONTHS = [
 
 type Tab = 'dashboard' | 'metrics' | 'feedback' | 'team' | 'records';
 
+// Helper functions for timezone-safe date management
+const getLocalDateString = (d: Date = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getEvaluationLocalDate = (e: { serviceDate?: string; date: string }) => {
+  if (e.serviceDate) {
+    const parts = e.serviceDate.split('-');
+    if (parts.length === 3) {
+      return {
+        year: parseInt(parts[0], 10),
+        month: parseInt(parts[1], 10) - 1, // 0-indexed
+        day: parseInt(parts[2], 10),
+        formattedDate: `${parts[2]}/${parts[1]}/${parts[0]}`
+      };
+    }
+  }
+  const d = new Date(e.date);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return {
+    year: d.getFullYear(),
+    month: d.getMonth(),
+    day: d.getDate(),
+    formattedDate: `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+  };
+};
+
 export default function App() {
   // --- State ---
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -90,7 +120,7 @@ export default function App() {
   
   const [newEval, setNewEval] = useState<Partial<Evaluation>>({ 
     clientName: '', unitId: '', barberId: '', 
-    serviceDate: new Date().toISOString().split('T')[0], serviceTime: '',
+    serviceDate: getLocalDateString(), serviceTime: '',
     clientArrivalStatus: 'SIM', serviceStartStatus: 'SIM', problemDescription: '',
     complaintStatus: 'NÃO', leftFeedback: false, feedbackDescription: '',
     isSubscriber: false, offeredSubscription: false, subscriptionInterest: 'NENHUM',
@@ -216,8 +246,8 @@ export default function App() {
   // --- Computed Filters ---
   const filteredEvaluations = useMemo(() => {
     return evaluations.filter(e => {
-        const evalDate = new Date(e.date);
-        return evalDate.getFullYear() === selectedYear && (viewMode === 'mensal' ? evalDate.getMonth() === selectedMonth : true);
+        const localDate = getEvaluationLocalDate(e);
+        return localDate.year === selectedYear && (viewMode === 'mensal' ? localDate.month === selectedMonth : true);
     });
   }, [evaluations, selectedYear, selectedMonth, viewMode]);
 
@@ -351,7 +381,7 @@ export default function App() {
       unit_id: newEval.unitId || null,
       barber_id: newEval.barberId || null,
       client_name: newEval.clientName || 'CLIENTE',
-      service_date: newEval.serviceDate || new Date().toISOString().split('T')[0],
+      service_date: newEval.serviceDate || getLocalDateString(),
       service_time: newEval.serviceTime || '',
       client_arrival_status: newEval.clientArrivalStatus || 'SIM',
       service_start_status: newEval.serviceStartStatus || 'SIM',
@@ -379,7 +409,7 @@ export default function App() {
       setEvaluations([evaluation, ...evaluations]);
     }
     setNewEval({ 
-        clientName: '', unitId: '', barberId: '', serviceDate: new Date().toISOString().split('T')[0], serviceTime: '',
+        clientName: '', unitId: '', barberId: '', serviceDate: getLocalDateString(), serviceTime: '',
         clientArrivalStatus: 'SIM', serviceStartStatus: 'SIM', problemDescription: '', complaintStatus: 'NÃO', 
         leftFeedback: false, feedbackDescription: '', isSubscriber: false, offeredSubscription: false, 
         subscriptionInterest: 'NENHUM', needsFollowUp: false, generalNotes: '', satisfactionLevel: 5
@@ -672,7 +702,7 @@ export default function App() {
                           <div className="relative z-10">
                             <div className="flex justify-between items-start mb-6">
                               <div className="text-xl font-black uppercase text-white tracking-tight leading-none">{item.clientName}</div>
-                              <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest"><Clock size={12} /> {new Date(item.date).toLocaleDateString('pt-BR')}</div>
+                              <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest"><Clock size={12} /> {getEvaluationLocalDate(item).formattedDate}</div>
                             </div>
                             
                             <div className="space-y-4 bg-zinc-950/40 p-5 rounded-xl border border-zinc-800/50">
@@ -927,7 +957,7 @@ export default function App() {
                         .map(e => (
                         <tr key={e.id} className="hover:bg-white/[0.02] transition-colors group">
                           <td className="p-6">
-                            <div className="text-xs font-bold text-white">{new Date(e.serviceDate || e.date).toLocaleDateString('pt-BR')}</div>
+                            <div className="text-xs font-bold text-white">{getEvaluationLocalDate(e).formattedDate}</div>
                             <div className="text-[8px] font-bold text-zinc-600 uppercase tracking-tighter">{e.serviceTime || '--:--'}</div>
                           </td>
                           <td className="p-6">
@@ -1000,7 +1030,7 @@ export default function App() {
                     <div>
                       <div className="text-xl font-black uppercase tracking-tight">{editModalEval.clientName}</div>
                       <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                        {new Date(editModalEval.serviceDate || editModalEval.date).toLocaleDateString('pt-BR')} · {editModalEval.serviceTime || '--:--'}
+                        {getEvaluationLocalDate(editModalEval).formattedDate} · {editModalEval.serviceTime || '--:--'}
                       </div>
                     </div>
                   </div>
